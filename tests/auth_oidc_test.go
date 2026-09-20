@@ -73,7 +73,7 @@ func oidcTestServer(t *testing.T) (*httpClient, *wagering.Service) {
 		Issuer:  keycloakIssuer,
 		JWKSURL: keycloakIssuer + "/protocol/openid-connect/certs",
 	}
-	srv := httptest.NewServer(httpapi.NewEngine(httpapi.NewHandler(svc), validator))
+	srv := httptest.NewServer(httpapi.NewEngine(httpapi.NewHandler(svc), validator, testLogger()))
 	t.Cleanup(srv.Close)
 	return &httpClient{t: t, base: srv.URL}, svc
 }

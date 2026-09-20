@@ -9,6 +9,8 @@ package tests
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"io"
+	"log/slog"
 	"os"
 	"testing"
 
@@ -17,6 +19,12 @@ import (
 	"github.com/jg-backend-challenge/wallet/internal/ports"
 	"github.com/jg-backend-challenge/wallet/internal/wagering"
 )
+
+// testLogger discards request logs to keep test output readable; tests that
+// assert on log content build their own handler over a buffer.
+func testLogger() *slog.Logger {
+	return slog.New(slog.NewJSONHandler(io.Discard, nil))
+}
 
 func testDSN() string {
 	if v := os.Getenv("TEST_DATABASE_URL"); v != "" {

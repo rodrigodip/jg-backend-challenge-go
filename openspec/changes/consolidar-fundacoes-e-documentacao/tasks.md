@@ -26,7 +26,7 @@
 
 - [x] 4.1 Implementar gin + Fx modules (`api`), endpoints wallets/ledger/transactions/reconciliacao/health com codigos `201/200/202/400/422/409/404/503` e verificar contrato por teste de integracao autenticado
 - [x] 4.2 Integrar Keycloak `client_credentials` (JWKS, claims, roles, `403` sem dados, token expirado) e verificar isolamento provider-a x provider-b em consultas e replays
-- [ ] 4.3 Implementar `/metrics` em porta admin + logs JSON com correlationIds e verificar presenca de metricas (status, duplicatas, retries, DLQ, conflitos, atraso outbox, latencia, divergencias)
+- [x] 4.3 Implementar `/metrics` em porta admin + logs JSON com correlationIds e verificar presenca de metricas (status, duplicatas, retries, DLQ, conflitos, atraso outbox, latencia, divergencias)
 
 ## 5. Mensageria e workers
 

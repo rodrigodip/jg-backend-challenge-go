@@ -52,8 +52,9 @@ func NewValidator(cfg Config) (httpapi.Validator, error) {
 	}, nil
 }
 
-// NewPublicEngine builds the gin engine with strict readiness from Config.
-func NewPublicEngine(h *httpapi.Handler, v httpapi.Validator, cfg Config) *gin.Engine {
+// NewPublicEngine builds the gin engine with strict readiness from Config
+// and wires the divergence reporter for reconciliation metrics.
+func NewPublicEngine(h *httpapi.Handler, v httpapi.Validator, cfg Config, log *slog.Logger) *gin.Engine {
 	h.ReadyCheck = func(ctx context.Context) error {
 		ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 		defer cancel()
@@ -62,7 +63,8 @@ func NewPublicEngine(h *httpapi.Handler, v httpapi.Validator, cfg Config) *gin.E
 		}
 		return checkSQS(ctx, cfg.SQSEndpoint)
 	}
-	return httpapi.NewEngine(h, v)
+	wagering.Reporter = httpapi.DivergenceMetrics{}
+	return httpapi.NewEngine(h, v, log)
 }
 
 func registerPublicLifecycle(lc fx.Lifecycle, cfg Config, log *slog.Logger, public *gin.Engine) {

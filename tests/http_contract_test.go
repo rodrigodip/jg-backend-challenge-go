@@ -79,7 +79,7 @@ func (h *httpClient) do(method, path, token string, headers map[string]string, b
 func TestHTTPContract(t *testing.T) {
 	svc := openService(t)
 	svc.NewID = wagering.NewUUID
-	engine := httpapi.NewEngine(httpapi.NewHandler(svc), testValidator())
+	engine := httpapi.NewEngine(httpapi.NewHandler(svc), testValidator(), testLogger())
 	srv := httptest.NewServer(engine)
 	defer srv.Close()
 	c := &httpClient{t: t, base: srv.URL}

@@ -279,6 +279,7 @@ func (h *Handler) getTransaction(c *gin.Context) {
 // (first or replayed, always with the persisted body), 202 pending without
 // balance.
 func writeSubmitResult(c *gin.Context, r *wagering.SubmitResult) {
+	recordTxResult(r)
 	status := "PROCESSED"
 	code := http.StatusCreated
 	switch r.Outcome {
@@ -319,6 +320,7 @@ func writeServiceError(c *gin.Context, err error) {
 	}
 	var conflict *wagering.ConflictError
 	if errors.As(err, &conflict) {
+		idempotencyConflicts.Inc()
 		abortError(c, http.StatusConflict, conflict.Code, conflict.Message)
 		return
 	}
