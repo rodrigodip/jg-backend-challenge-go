@@ -17,9 +17,9 @@
 
 ## 3. Persistencia e caso de uso transacional
 
-- [ ] 3.1 Implementar repositorios GORM contidos (`FOR UPDATE` carteira, `SKIP LOCKED` outbox/work, sem `Save`/imuteis) e verificar teste de integracao de atomicidade (estado+saldo+ledger+inbox+outbox no mesmo commit)
-- [ ] 3.2 Implementar hash SHA-256/RFC8785 + handler de dupla unicidade (replay vs `409`) e verificar integracao HTTP x SQS com mesmo hash e saldo original em replay
-- [ ] 3.3 Implementar aceite hibrido + work-table (inline ou `202`, lease, backoff, TTL 60s/5 ref/10 infra, reavaliacao imediata + polling) e verificar retomada por outra instancia apos `PENDING`
+- [x] 3.1 Implementar repositorios GORM contidos (`FOR UPDATE` carteira, `SKIP LOCKED` outbox/work, sem `Save`/imuteis) e verificar teste de integracao de atomicidade (estado+saldo+ledger+inbox+outbox no mesmo commit)
+- [x] 3.2 Implementar hash SHA-256/RFC8785 + handler de dupla unicidade (replay vs `409`) e verificar integracao HTTP x SQS com mesmo hash e saldo original em replay
+- [x] 3.3 Implementar aceite hibrido + work-table (inline ou `202`, lease, backoff, TTL 60s/5 ref/10 infra, reavaliacao imediata + polling) e verificar retomada por outra instancia apos `PENDING`
 - [ ] 3.4 Implementar cursor de ledger, reconciliacao `REPEATABLE READ` e metricas/log de divergencia e verificar `stored == calculado` e `checkedEntries` incluindo abertura zero
 
 ## 4. HTTP + Auth
