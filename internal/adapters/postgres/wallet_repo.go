@@ -10,10 +10,12 @@ import (
 type walletRepo struct{ db *gorm.DB }
 
 // LockForUpdate serializes concurrent operations on one wallet row.
+// Malformed ids (non-UUID text against the uuid PK) read as absent, so
+// callers map them to 400/404 instead of 503.
 func (r *walletRepo) LockForUpdate(walletID string) (*ports.WalletRecord, error) {
 	var m WalletModel
 	if err := lockUpdate(r.db).Where("id = ?", walletID).First(&m).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, gorm.ErrRecordNotFound) || isInvalidInput(err) {
 			return nil, nil
 		}
 		return nil, err
@@ -28,7 +30,7 @@ func (r *walletRepo) LockForUpdate(walletID string) (*ports.WalletRecord, error)
 func (r *walletRepo) Get(walletID string) (*ports.WalletRecord, error) {
 	var m WalletModel
 	if err := r.db.Where("id = ?", walletID).First(&m).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, gorm.ErrRecordNotFound) || isInvalidInput(err) {
 			return nil, nil
 		}
 		return nil, err

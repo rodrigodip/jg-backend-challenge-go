@@ -18,22 +18,8 @@ func NewLogger() *slog.Logger {
 	return slog.New(slog.NewJSONHandler(os.Stdout, nil))
 }
 
-// publicMux serves business routes (wired in later blocks) and health checks.
-type publicMux struct{ *http.ServeMux }
-
 // adminMux serves operational endpoints on a separate port.
 type adminMux struct{ *http.ServeMux }
-
-// newPublicMux serves business routes (wired in later blocks) and health checks.
-func newPublicMux(cfg Config) publicMux {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/health/live", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"status":"alive"}`))
-	})
-	mux.HandleFunc("/health/ready", readyHandler(cfg))
-	return publicMux{mux}
-}
 
 // newAdminMux serves operational endpoints on a separate port.
 func newAdminMux() adminMux {
@@ -102,28 +88,30 @@ func checkSQS(ctx context.Context, endpoint string) error {
 	return nil
 }
 
-// New builds the Fx application for the given config.
+// New builds the Fx application for the given config. The admin server
+// (metrics) always runs; the public gin engine only joins in api mode via
+// ApiModule, and the worker heartbeat only in consumer/workers modes.
 func New(cfg Config) *fx.App {
-	return fx.New(
+	opts := []fx.Option{
 		fx.Supply(cfg),
 		fx.Provide(NewLogger),
-		fx.Provide(newPublicMux, newAdminMux),
-		fx.Invoke(registerLifecycle),
-	)
+		fx.Provide(newAdminMux),
+		fx.Invoke(registerAdminLifecycle),
+	}
+	if cfg.Mode == ModeAPI {
+		opts = append(opts, ApiModule)
+	} else {
+		opts = append(opts, fx.Invoke(registerWorkerHeartbeat))
+	}
+	return fx.New(opts...)
 }
 
-func registerLifecycle(lc fx.Lifecycle, cfg Config, log *slog.Logger, public publicMux, admin adminMux) {
-	publicSrv := &http.Server{Addr: cfg.HTTPAddr, Handler: public, ReadHeaderTimeout: 5 * time.Second}
+func registerAdminLifecycle(lc fx.Lifecycle, cfg Config, log *slog.Logger, admin adminMux) {
 	adminSrv := &http.Server{Addr: cfg.AdminAddr, Handler: admin, ReadHeaderTimeout: 5 * time.Second}
 
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			log.Info("starting servers", "mode", string(cfg.Mode), "http", cfg.HTTPAddr, "admin", cfg.AdminAddr)
-			go func() {
-				if err := publicSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-					log.Error("public server stopped", "err", err)
-				}
-			}()
+			log.Info("starting admin server", "mode", string(cfg.Mode), "admin", cfg.AdminAddr)
 			go func() {
 				if err := adminSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 					log.Error("admin server stopped", "err", err)
@@ -132,32 +120,29 @@ func registerLifecycle(lc fx.Lifecycle, cfg Config, log *slog.Logger, public pub
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			log.Info("stopping servers", "mode", string(cfg.Mode))
+			log.Info("stopping admin server", "mode", string(cfg.Mode))
 			ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 			defer cancel()
-			if err := publicSrv.Shutdown(ctx); err != nil {
-				log.Error("public shutdown failed", "err", err)
-			}
 			if err := adminSrv.Shutdown(ctx); err != nil {
 				log.Error("admin shutdown failed", "err", err)
 			}
 			return nil
 		},
 	})
+}
 
-	if cfg.Mode != ModeAPI {
-		ctx, cancel := context.WithCancel(context.Background())
-		lc.Append(fx.Hook{
-			OnStart: func(context.Context) error {
-				go workerHeartbeat(ctx, log, cfg.Mode)
-				return nil
-			},
-			OnStop: func(context.Context) error {
-				cancel()
-				return nil
-			},
-		})
-	}
+func registerWorkerHeartbeat(lc fx.Lifecycle, cfg Config, log *slog.Logger) {
+	ctx, cancel := context.WithCancel(context.Background())
+	lc.Append(fx.Hook{
+		OnStart: func(context.Context) error {
+			go workerHeartbeat(ctx, log, cfg.Mode)
+			return nil
+		},
+		OnStop: func(context.Context) error {
+			cancel()
+			return nil
+		},
+	})
 }
 
 // workerHeartbeat keeps consumer/workers processes observable until real

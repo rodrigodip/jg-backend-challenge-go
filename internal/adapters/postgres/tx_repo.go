@@ -40,11 +40,12 @@ func (r *txRepo) Insert(tx *ports.TxRecord) error {
 	}).Error
 }
 
-// Get fetches a transaction by id, or nil when absent.
+// Get fetches a transaction by id, or nil when absent (including malformed
+// ids against the uuid PK).
 func (r *txRepo) Get(id string) (*ports.TxRecord, error) {
 	var m WagerTxModel
 	if err := r.db.Where("id = ?", id).First(&m).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, gorm.ErrRecordNotFound) || isInvalidInput(err) {
 			return nil, nil
 		}
 		return nil, err

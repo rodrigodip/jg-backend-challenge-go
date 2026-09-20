@@ -1,6 +1,9 @@
 package postgres
 
 import (
+	"errors"
+
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jg-backend-challenge/wallet/internal/ports"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -56,6 +59,17 @@ func (s *Store) Ledger() ports.LedgerRepo { return &ledgerRepo{db: s.db} }
 
 // Aux returns the inbox/outbox/work repository on this handle.
 func (s *Store) Aux() ports.AuxRepo { return &auxRepo{db: s.db} }
+
+// isInvalidInput reports Postgres 22P02 (invalid text representation, e.g.
+// a non-UUID string bound to a uuid PK) through GORM/pgx wrapping. Reads
+// with malformed ids are treated as absent, never as infra failures.
+func isInvalidInput(err error) bool {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code == "22P02"
+	}
+	return false
+}
 
 // lockUpdate is SELECT ... FOR UPDATE on the caller's query.
 func lockUpdate(db *gorm.DB) *gorm.DB {
