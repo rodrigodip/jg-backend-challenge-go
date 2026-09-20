@@ -43,5 +43,5 @@
 
 ## 7. Documentacao de entrega (§15)
 
-- [ ] 7.1 Escrever `ARCHITECTURE.md` (dinheiro, transacoes, idempotencia, locks, refs, reversoes, inbox/outbox, auth/authz, Fx, shutdown + limitacoes/resultados do teste de emulador) e verificar cada ADR em `docs/adr/` rastreado ao seu D-id e secao do README
+- [x] 7.1 Escrever `ARCHITECTURE.md` (dinheiro, transacoes, idempotencia, locks, refs, reversoes, inbox/outbox, auth/authz, Fx, shutdown + limitacoes/resultados do teste de emulador) e verificar cada ADR em `docs/adr/` rastreado ao seu D-id e secao do README
 - [ ] 7.2 Escrever README de solucao (pre-reqs, env, filas, migrate up/down, exemplos autenticados, testes unitarios/integracao/multi-instancia/falhas, build tags) e verificar reproducao a partir de checkout limpo
