@@ -89,8 +89,8 @@ func checkSQS(ctx context.Context, endpoint string) error {
 }
 
 // New builds the Fx application for the given config. The admin server
-// (metrics) always runs; the public gin engine only joins in api mode via
-// ApiModule, and the worker heartbeat only in consumer/workers modes.
+// (metrics) always runs; each mode appends its own module. Consumer mode
+// replaces the placeholder heartbeat with the real SQS poll loop.
 func New(cfg Config) *fx.App {
 	opts := []fx.Option{
 		fx.Supply(cfg),
@@ -98,9 +98,12 @@ func New(cfg Config) *fx.App {
 		fx.Provide(newAdminMux),
 		fx.Invoke(registerAdminLifecycle),
 	}
-	if cfg.Mode == ModeAPI {
+	switch cfg.Mode {
+	case ModeAPI:
 		opts = append(opts, ApiModule)
-	} else {
+	case ModeConsumer:
+		opts = append(opts, ConsumerModule)
+	default:
 		opts = append(opts, fx.Invoke(registerWorkerHeartbeat))
 	}
 	return fx.New(opts...)
