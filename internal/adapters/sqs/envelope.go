@@ -7,10 +7,13 @@
 // the same commit as the treatment; the queue message is deleted only after
 // that commit.
 //
-// Broker limits (documented for 5.3): the MiniStack emulator may not enforce
-// queue policies or per-role credentials. Correctness never depends on the
-// broker: the consumer revalidates every domain rule, dedupes by inbox hash
-// and preserves money on redelivery.
+// Broker limits (documented for 5.3, verified against MiniStack 1.5.13):
+// the emulator accepts any credentials, including bogus ones, serves every
+// queue from the same default account and enforces no queue policy or role
+// separation. Per-role keypairs (consumer, publisher) are still wired
+// end-to-end so the topology matches production, but correctness never
+// depends on the broker: the consumer revalidates every domain rule,
+// dedupes by inbox hash and preserves money on redelivery.
 package sqs
 
 import (

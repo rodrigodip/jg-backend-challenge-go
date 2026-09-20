@@ -32,7 +32,7 @@
 
 - [x] 5.1 Implementar consumidor SQS (batch 10, 10 handlers, visibility 30s, `ChangeMessageVisibility` backoff, DLQ explicita, delete so pos-commit, `SIGTERM` 30s) e verificar reentrega pos-commit sem duplicata
 - [x] 5.2 Implementar workers de referencias e outbox (claim concorrente, lease, `eventId` estavel, envelope com `walletVersion`) e verificar 2 publishers disputando + recuperacao pos-queda
-- [ ] 5.3 Implementar credenciais por papel do broker + documentar limite de enforcement e verificar consumidor revalida dominio mesmo com policy permissiva
+- [x] 5.3 Implementar credenciais por papel do broker + documentar limite de enforcement e verificar consumidor revalida dominio mesmo com policy permissiva
 
 ## 6. Verificacao obrigatoria (§13) e diferenciais
 

@@ -10,10 +10,15 @@ import (
 )
 
 // NewClient builds the SQS client for the emulator endpoint with the role's
-// credentials (5.3). When key and secret are both set they win explicitly;
-// otherwise the default SDK chain applies (ambient env, shared config).
-// Either way the consumer revalidates every domain rule: broker credential
-// enforcement is transport-only and never trusted for money.
+// credentials (5.3): compose assigns consumer keys to the consumer role and
+// publisher keys to the workers role, and both are accepted end-to-end. When
+// key and secret are both set they win explicitly; otherwise the default SDK
+// chain applies (ambient env, shared config).
+//
+// Enforcement limit: MiniStack 1.5.13 accepts even bogus credentials and
+// applies no queue policy, so credential separation is topological, not a
+// security boundary. The financial boundary is domain revalidation inside
+// the consumer, which runs identically under any broker policy.
 func NewClient(ctx context.Context, endpoint, region, accessKey, secret string) (*sqs.Client, error) {
 	opts := []func(*config.LoadOptions) error{
 		config.WithRegion(region),
