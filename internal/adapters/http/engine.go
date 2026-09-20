@@ -15,6 +15,7 @@ func NewEngine(h *Handler, v Validator, log *slog.Logger) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Recovery())
 	r.Use(CorrelationMiddleware())
+	r.Use(TracingMiddleware())
 	r.Use(RequestLogger(log))
 	r.Use(MetricsMiddleware())
 

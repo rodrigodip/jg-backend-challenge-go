@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/jg-backend-challenge/wallet/internal/obs"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/fx"
 )
@@ -96,6 +97,7 @@ func New(cfg Config) *fx.App {
 		fx.Provide(NewLogger),
 		fx.Provide(newAdminMux),
 		fx.Invoke(registerAdminLifecycle),
+		fx.Invoke(registerTracingLifecycle),
 	}
 	switch cfg.Mode {
 	case ModeAPI:
@@ -109,6 +111,7 @@ func New(cfg Config) *fx.App {
 }
 
 func registerAdminLifecycle(lc fx.Lifecycle, cfg Config, log *slog.Logger, admin adminMux) {
+
 	adminSrv := &http.Server{Addr: cfg.AdminAddr, Handler: admin, ReadHeaderTimeout: 5 * time.Second}
 
 	lc.Append(fx.Hook{
@@ -129,6 +132,33 @@ func registerAdminLifecycle(lc fx.Lifecycle, cfg Config, log *slog.Logger, admin
 				log.Error("admin shutdown failed", "err", err)
 			}
 			return nil
+		},
+	})
+}
+
+// registerTracingLifecycle installs the OTel stdout exporter when enabled
+// (OTEL_TRACES_STDOUT, default on) and flushes it on stop. Disabled keeps
+// the global no-op provider: spans cost nothing and emit nothing.
+func registerTracingLifecycle(lc fx.Lifecycle, cfg Config, log *slog.Logger) {
+	if !cfg.OTELStdout {
+		return
+	}
+	var shutdown func(context.Context) error
+	lc.Append(fx.Hook{
+		OnStart: func(context.Context) error {
+			var err error
+			shutdown, err = obs.SetupStdout(os.Stdout, "wallet-"+string(cfg.Mode))
+			if err != nil {
+				return err
+			}
+			log.Info("otel stdout tracing enabled", "mode", string(cfg.Mode))
+			return nil
+		},
+		OnStop: func(ctx context.Context) error {
+			if shutdown == nil {
+				return nil
+			}
+			return shutdown(ctx)
 		},
 	})
 }

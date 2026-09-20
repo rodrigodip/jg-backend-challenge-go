@@ -13,7 +13,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	"github.com/jg-backend-challenge/wallet/internal/domain"
+	"github.com/jg-backend-challenge/wallet/internal/obs"
 	"github.com/jg-backend-challenge/wallet/internal/wagering"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // ConsumerName is the durable inbox identity of the SQS consumer role.
@@ -125,6 +127,10 @@ func (c *Consumer) Handle(ctx context.Context, msg types.Message) error {
 	if corr == "" {
 		corr = id
 	}
+	// One span per delivery sharing the message correlationId (D9): the
+	// redelivery of a killed commit replays under the same correlation.
+	ctx, span := obs.Start(ctx, "sqs handle", corr, attribute.String("messageId", id))
+	defer span.End()
 	d := env.Data
 	res, err := c.Service.Submit(wagering.SubmitInput{
 		ProviderID: d.ProviderID, ExternalID: d.ExternalTransactionID,
@@ -138,10 +144,12 @@ func (c *Consumer) Handle(ctx context.Context, msg types.Message) error {
 	})
 	switch {
 	case err == nil:
+		span.SetAttributes(attribute.String("outcome", submitOutcome(res)))
 		c.delete(ctx, id, receipt)
 		consumeResults.WithLabelValues(submitOutcome(res)).Inc()
 		return nil
 	case isPoison(err):
+		span.SetAttributes(attribute.String("outcome", "poison"))
 		c.toDLQ(ctx, msg, body, d.WalletID, "poison", err)
 		c.delete(ctx, id, receipt)
 		consumeResults.WithLabelValues("poison").Inc()

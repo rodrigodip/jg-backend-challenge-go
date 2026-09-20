@@ -1,0 +1,25 @@
+# Load profile for task 6.4 (reproducible k6 report, see docs/k6-report.md).
+#
+# Canonical run (`make k6`):
+#   docker compose -f docker-compose.yml -f docker-compose.load.yml up --build -d --scale api=3
+#   docker run --rm --network jg-wallet_default \
+#     -v ./tests/k6:/scripts:ro grafana/k6:2.2.0 run /scripts/wallet_load.js
+#
+# Why this file exists:
+# - The base compose publishes api 8080:8080, which forbids --scale api=3.
+#   Plain `ports: []` would merge with the base list, so !reset clears it;
+#   replicas are then reachable in-network as http://api:8080.
+# - k6 runs via `docker run`, NOT `docker compose run`: compose run
+#   reconciles dependencies at scale 1 and SIGTERMs the extra replicas
+#   (verified 2026-09-20: 3 -> 1 around every run invocation).
+# - Keycloak signs iss from the request host while the api validates a fixed
+#   OIDC_ISSUER, so k6 must run inside the compose network (keycloak:8080)
+#   to present acceptable tokens. Host-run k6 can only mint localhost:8081
+#   tokens, which the api rejects with 401 (verified 2026-09-20).
+name: jg-wallet
+
+services:
+  api:
+    # No published ports under load: reach replicas as http://api:8080.
+    # Plain `ports: []` would merge with the base list, so !reset clears it.
+    ports: !reset []

@@ -28,8 +28,13 @@ test: ## Run unit tests
 test-race: ## Run unit tests with the race detector
 	go test -race ./...
 
-test-integration: ## Run integration tests (needs up)
+test-integration: ## Run integration tests (needs up; stops consumer/workers: they race test-local publishers over the shared outbox)
+	docker compose stop consumer workers
 	go test -tags integration ./tests/ -timeout 5m
+
+k6: ## Run the k6 load scenario against 3 api replicas (see docs/k6-report.md)
+	docker compose -f docker-compose.yml -f docker-compose.load.yml up --build -d --scale api=3
+	docker run --rm --network jg-wallet_default -v ./tests/k6:/scripts:ro grafana/k6:2.2.0 run /scripts/wallet_load.js
 
 vet: ## Vet all packages including integration-tagged files
 	go vet ./... && go vet -tags integration ./...

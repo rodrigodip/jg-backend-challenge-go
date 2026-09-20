@@ -39,7 +39,7 @@
 - [x] 6.1 Executar bateria de concorrencia: 50x mesma aposta, 100/80/80, carteiras distintas em paralelo, 3 instancias independentes, e verificar saldo final + ledger + `go test -race`
 - [x] 6.2 Executar bateria de recuperacao: kill entre commit/remocao, outbox disputada, REFUND antes da referencia com resolucao e com expiracao, restart preservando idempotencia, e verificar consistencia `stored == creditos - debitos`
 - [x] 6.3 Executar teste de composicao Fx (start/stop, liberacao de workers) sem mocks integrais e verificar `go test ./...`, `go test -race ./...`, `go vet ./...` verdes
-- [ ] 6.4 Adicionar OTel stdout + cenario k6 (throughput, p50/p95/p99, erros, conflitos, atraso outbox) e verificar relatorio reproduzivel documentado
+- [x] 6.4 Adicionar OTel stdout + cenario k6 (throughput, p50/p95/p99, erros, conflitos, atraso outbox) e verificar relatorio reproduzivel documentado
 
 ## 7. Documentacao de entrega (§15)
 

@@ -44,6 +44,10 @@ type Config struct {
 	SQSTxQueue     string
 	SQSTxDLQ       string
 	SQSEventsQueue string
+	// OTELStdout enables the OpenTelemetry stdout trace exporter (D9).
+	// OTEL_TRACES_STDOUT=0 disables it; anything else (including unset)
+	// exports one span per HTTP request and SQS delivery with correlationId.
+	OTELStdout bool
 }
 
 func getenv(key, fallback string) string {
@@ -76,6 +80,7 @@ func LoadFromEnv() (Config, error) {
 		SQSTxQueue:     getenv("SQS_TX_QUEUE", "wager-transactions.fifo"),
 		SQSTxDLQ:       getenv("SQS_TX_DLQ", "wager-transactions-dlq.fifo"),
 		SQSEventsQueue: getenv("SQS_EVENTS_QUEUE", "wager-events.fifo"),
+		OTELStdout:     getenv("OTEL_TRACES_STDOUT", "1") != "0",
 	}
 	if cfg.DatabaseURL == "" {
 		return Config{}, errors.New("DATABASE_URL is required")

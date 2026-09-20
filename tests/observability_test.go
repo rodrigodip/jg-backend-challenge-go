@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	httpapi "github.com/jg-backend-challenge/wallet/internal/adapters/http"
+	"github.com/jg-backend-challenge/wallet/internal/obs"
 	"github.com/jg-backend-challenge/wallet/internal/wagering"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -121,5 +122,42 @@ func TestObservability(t *testing.T) {
 	}
 	if !foundProvider {
 		t.Error("no log line carries the provider scope")
+	}
+}
+
+// TestTracingStdout covers the auth-observability tracing requirement: the
+// stdout exporter emits one span per request carrying the correlationId, so
+// spans join the same flow as logs and metrics. SetupStdout installs the
+// process-global provider; later tests keep exporting into this buffer,
+// which is harmless (spans are write-only diagnostics).
+func TestTracingStdout(t *testing.T) {
+	var spans bytes.Buffer
+	shutdown, err := obs.SetupStdout(&spans, "wallet-test")
+	if err != nil {
+		t.Fatalf("setup stdout tracing: %v", err)
+	}
+	defer func() {
+		if err := shutdown(context.Background()); err != nil {
+			t.Errorf("tracing shutdown: %v", err)
+		}
+	}()
+
+	svc := openService(t)
+	engine := httpapi.NewEngine(httpapi.NewHandler(svc), testValidator(), testLogger())
+	srv := httptest.NewServer(engine)
+	defer srv.Close()
+	c := &httpClient{t: t, base: srv.URL}
+
+	if code, _, _ := c.do("GET", "/health/live", "", map[string]string{
+		"X-Correlation-Id": "corr-span-1",
+	}, nil); code != 200 {
+		t.Fatalf("health/live = %d, want 200", code)
+	}
+	out := spans.String()
+	if !strings.Contains(out, "corr-span-1") {
+		t.Fatalf("no span carries the correlation id:\n%s", out)
+	}
+	if !strings.Contains(out, `"Name":"GET /health/live"`) {
+		t.Errorf("span not renamed to the route template:\n%s", out)
 	}
 }
