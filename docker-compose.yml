@@ -23,6 +23,9 @@ services:
       # Host uses 5433: the developer machine already runs a system
       # PostgreSQL on 5432. Containers keep talking to postgres:5432.
       - "5433:5432"
+    # Dev convenience: resume what was running after a host reboot.
+    # The migrate job keeps restart "no" (one-shot by design).
+    restart: unless-stopped
 
   ministack:
     image: ministackorg/ministack:1.5.13
@@ -36,6 +39,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+    restart: unless-stopped
 
   keycloak:
     image: keycloak/keycloak:26.7.4
@@ -55,6 +59,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 20
+    restart: unless-stopped
 
   migrate:
     build: .
@@ -89,6 +94,7 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
+    restart: unless-stopped
 
   consumer:
     build: .
@@ -108,6 +114,7 @@ services:
         condition: service_completed_successfully
       ministack:
         condition: service_healthy
+    restart: unless-stopped
 
   workers:
     build: .
@@ -127,6 +134,7 @@ services:
         condition: service_completed_successfully
       ministack:
         condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   pgdata:

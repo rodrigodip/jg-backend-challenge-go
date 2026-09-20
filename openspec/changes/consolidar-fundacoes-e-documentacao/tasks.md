@@ -6,6 +6,7 @@
 - [x] 1.2 Escrever migrations goose (wallets, transactions com discriminador, ledger, inbox, outbox, work_items + triggers anti UPDATE/DELETE) e verificar `goose up`/`down` em Postgres 18 real
 - [x] 1.3 Criar Compose (postgres, ministack tag pinnada, keycloak com realm importado, migrate job, api/consumer/workers) e verificar `docker compose up --build` sobe todos saudaveis
 - [x] 1.4 Provisionar filas `wager-transactions.fifo`, DLQ com redrive, `wager-events.fifo` via hook e verificar via teste de compatibilidade do emulador (FIFO/grupo, dedup, visibility, long-poll, redrive, policies)
+- [x] 1.5 Criar Makefile autodocumentado (`make` lista comandos) com up/ps/logs/health/testes/migrate/stop/clean/nuke, aplicar `restart: unless-stopped` nos servicos longos e verificar help, up saudavel e guardas dos destrutivos
 
 ## 2. Dominio (Money, Wallet, Wagering)
 
