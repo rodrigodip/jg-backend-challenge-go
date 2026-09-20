@@ -70,6 +70,8 @@ type OutboxRecord struct {
 	EventType   string
 	Payload     []byte
 	Attempts    int
+	// OccurredAt is the origin commit time, used for publish-delay metrics.
+	OccurredAt time.Time
 }
 
 // WorkItem is the persistence view of a work_items row.
@@ -122,6 +124,10 @@ type AuxRepo interface {
 	ListUnpublished(aggregateID string) ([]*OutboxRecord, error)
 	ClaimOutbox(owner string, leaseTTL time.Duration, limit int) ([]*OutboxRecord, error)
 	MarkOutboxPublished(eventID string) error
+	// NackOutbox releases a failed publish with attempt backoff: attempts
+	// advances, the next send moves to nextSendAt and the lease clears so
+	// any instance (including the same worker) can resume.
+	NackOutbox(eventID string, attempts int, nextSendAt time.Time) error
 	EnqueueWork(w *WorkItem) error
 	GetWork(txID string) (*WorkItem, error)
 	ClaimWork(owner string, leaseTTL time.Duration, limit int) ([]*WorkItem, error)

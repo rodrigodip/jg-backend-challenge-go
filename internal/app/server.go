@@ -89,8 +89,7 @@ func checkSQS(ctx context.Context, endpoint string) error {
 }
 
 // New builds the Fx application for the given config. The admin server
-// (metrics) always runs; each mode appends its own module. Consumer mode
-// replaces the placeholder heartbeat with the real SQS poll loop.
+// (metrics) always runs; each mode appends its own module.
 func New(cfg Config) *fx.App {
 	opts := []fx.Option{
 		fx.Supply(cfg),
@@ -103,8 +102,8 @@ func New(cfg Config) *fx.App {
 		opts = append(opts, ApiModule)
 	case ModeConsumer:
 		opts = append(opts, ConsumerModule)
-	default:
-		opts = append(opts, fx.Invoke(registerWorkerHeartbeat))
+	case ModeWorkers:
+		opts = append(opts, WorkersModule)
 	}
 	return fx.New(opts...)
 }
@@ -132,33 +131,4 @@ func registerAdminLifecycle(lc fx.Lifecycle, cfg Config, log *slog.Logger, admin
 			return nil
 		},
 	})
-}
-
-func registerWorkerHeartbeat(lc fx.Lifecycle, cfg Config, log *slog.Logger) {
-	ctx, cancel := context.WithCancel(context.Background())
-	lc.Append(fx.Hook{
-		OnStart: func(context.Context) error {
-			go workerHeartbeat(ctx, log, cfg.Mode)
-			return nil
-		},
-		OnStop: func(context.Context) error {
-			cancel()
-			return nil
-		},
-	})
-}
-
-// workerHeartbeat keeps consumer/workers processes observable until real
-// workers land in later blocks. It stops on context cancellation.
-func workerHeartbeat(ctx context.Context, log *slog.Logger, mode Mode) {
-	t := time.NewTicker(10 * time.Second)
-	defer t.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-t.C:
-			log.Info("worker heartbeat", "mode", string(mode))
-		}
-	}
 }

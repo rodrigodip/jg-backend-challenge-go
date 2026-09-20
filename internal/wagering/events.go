@@ -43,9 +43,10 @@ func (s *Service) emitProcessed(db ports.DB, w interface {
 		"amount": in.AmountText, "currency": in.Currency,
 		"balance": after.String(), "walletVersion": w.Version(),
 	}
+	procID := s.newID()
 	if err := db.Aux().EnqueueOutbox(&ports.OutboxRecord{
-		EventID: s.newID(), AggregateID: w.ID(), EventType: EventProcessed,
-		Payload: mustEventPayload(s.newID(), EventProcessed, w.ID(), in.CorrelationID, now, w.Version(), procData),
+		EventID: procID, AggregateID: w.ID(), EventType: EventProcessed,
+		Payload: mustEventPayload(procID, EventProcessed, w.ID(), in.CorrelationID, now, w.Version(), procData),
 	}); err != nil {
 		return err
 	}
@@ -58,9 +59,10 @@ func (s *Service) emitProcessed(db ports.DB, w interface {
 		"balanceBefore": before.String(), "balanceAfter": after.String(),
 		"walletVersion": w.Version(),
 	}
+	balID := s.newID()
 	return db.Aux().EnqueueOutbox(&ports.OutboxRecord{
-		EventID: s.newID(), AggregateID: w.ID(), EventType: EventBalance,
-		Payload: mustEventPayload(s.newID(), EventBalance, w.ID(), in.CorrelationID, now, w.Version(), balData),
+		EventID: balID, AggregateID: w.ID(), EventType: EventBalance,
+		Payload: mustEventPayload(balID, EventBalance, w.ID(), in.CorrelationID, now, w.Version(), balData),
 	})
 }
 
@@ -76,9 +78,10 @@ func (s *Service) emitRejected(db ports.DB, w interface {
 		"amount": in.AmountText, "currency": in.Currency,
 		"failureCode": code, "balance": balance.String(), "walletVersion": w.Version(),
 	}
+	rejID := s.newID()
 	return db.Aux().EnqueueOutbox(&ports.OutboxRecord{
-		EventID: s.newID(), AggregateID: w.ID(), EventType: EventRejected,
-		Payload: mustEventPayload(s.newID(), EventRejected, w.ID(), in.CorrelationID, nowOf(s), w.Version(), data),
+		EventID: rejID, AggregateID: w.ID(), EventType: EventRejected,
+		Payload: mustEventPayload(rejID, EventRejected, w.ID(), in.CorrelationID, nowOf(s), w.Version(), data),
 	})
 }
 
@@ -94,9 +97,10 @@ func (s *Service) emitPendingRef(db ports.DB, w interface {
 		"referenceExternalTransactionId": in.ReferenceExternal,
 		"walletVersion":                  w.Version(),
 	}
+	pendID := s.newID()
 	return db.Aux().EnqueueOutbox(&ports.OutboxRecord{
-		EventID: s.newID(), AggregateID: w.ID(), EventType: EventPendingRef,
-		Payload: mustEventPayload(s.newID(), EventPendingRef, w.ID(), in.CorrelationID, nowOf(s), w.Version(), data),
+		EventID: pendID, AggregateID: w.ID(), EventType: EventPendingRef,
+		Payload: mustEventPayload(pendID, EventPendingRef, w.ID(), in.CorrelationID, nowOf(s), w.Version(), data),
 	})
 }
 

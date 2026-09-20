@@ -69,9 +69,10 @@ func (s *Service) OpenWallet(playerID, currency, initialText string) (*ports.Wal
 			"amount": initialText, "currency": currency,
 			"balance": after.String(), "walletVersion": int64(1),
 		}
+		procID := s.newID()
 		if err := db.Aux().EnqueueOutbox(&ports.OutboxRecord{
-			EventID: s.newID(), AggregateID: walletID, EventType: EventProcessed,
-			Payload: mustEventPayload(s.newID(), EventProcessed, walletID, "", now, 1, procData),
+			EventID: procID, AggregateID: walletID, EventType: EventProcessed,
+			Payload: mustEventPayload(procID, EventProcessed, walletID, "", now, 1, procData),
 		}); err != nil {
 			return err
 		}
@@ -81,9 +82,10 @@ func (s *Service) OpenWallet(playerID, currency, initialText string) (*ports.Wal
 			"balanceBefore": zero.String(), "balanceAfter": after.String(),
 			"walletVersion": int64(1),
 		}
+		balID := s.newID()
 		if err := db.Aux().EnqueueOutbox(&ports.OutboxRecord{
-			EventID: s.newID(), AggregateID: walletID, EventType: EventBalance,
-			Payload: mustEventPayload(s.newID(), EventBalance, walletID, "", now, 1, balData),
+			EventID: balID, AggregateID: walletID, EventType: EventBalance,
+			Payload: mustEventPayload(balID, EventBalance, walletID, "", now, 1, balData),
 		}); err != nil {
 			return err
 		}

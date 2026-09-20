@@ -39,10 +39,12 @@ func (r *auxRepo) FindInbox(consumer, messageID string) (string, bool, bool, err
 }
 
 // EnqueueOutbox stages an immutable event payload for post-commit publish.
+// OccurredAt is stamped here (not left to the column default) because GORM
+// persists the struct's zero time explicitly, which would override it.
 func (r *auxRepo) EnqueueOutbox(e *ports.OutboxRecord) error {
 	return r.db.Create(&OutboxModel{
 		EventID: e.EventID, AggregateID: e.AggregateID, EventType: e.EventType,
-		Payload: e.Payload, Attempts: e.Attempts,
+		Payload: e.Payload, Attempts: e.Attempts, OccurredAt: time.Now().UTC(),
 	}).Error
 }
 
@@ -60,34 +62,43 @@ func (r *auxRepo) ListUnpublished(aggregateID string) ([]*ports.OutboxRecord, er
 		out = append(out, &ports.OutboxRecord{
 			EventID: ms[i].EventID, AggregateID: ms[i].AggregateID,
 			EventType: ms[i].EventType, Payload: ms[i].Payload, Attempts: ms[i].Attempts,
+			OccurredAt: ms[i].OccurredAt,
 		})
 	}
 	return out, nil
 }
 
 // ClaimOutbox takes up to limit unpublished, due, unlocked-or-expired rows
-// with SKIP LOCKED so concurrent publishers never double-claim. It sets the
-// lease in the same statement batch.
+// so concurrent publishers never double-claim. The select and the lease
+// update run in one transaction: without it, two publishers racing between
+// autocommit statements could claim the same row and publish it twice.
 func (r *auxRepo) ClaimOutbox(owner string, leaseTTL time.Duration, limit int) ([]*ports.OutboxRecord, error) {
 	now := time.Now().UTC()
-	var ms []OutboxModel
-	if err := lockUpdateSkipLocked(r.db).
-		Where("published_at IS NULL AND next_send_at <= ? AND (lease_expires_at IS NULL OR lease_expires_at <= ?)", now, now).
-		Order("next_send_at ASC").Limit(limit).Find(&ms).Error; err != nil {
-		return nil, err
-	}
-	out := make([]*ports.OutboxRecord, 0, len(ms))
 	expires := now.Add(leaseTTL)
-	for i := range ms {
-		if err := r.db.Model(&OutboxModel{}).Where("event_id = ?", ms[i].EventID).Updates(map[string]any{
-			"lease_owner": owner, "lease_expires_at": expires,
-		}).Error; err != nil {
-			return nil, err
+	out := make([]*ports.OutboxRecord, 0, limit)
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		var ms []OutboxModel
+		if err := lockUpdateSkipLocked(tx).
+			Where("published_at IS NULL AND next_send_at <= ? AND (lease_expires_at IS NULL OR lease_expires_at <= ?)", now, now).
+			Order("next_send_at ASC").Limit(limit).Find(&ms).Error; err != nil {
+			return err
 		}
-		out = append(out, &ports.OutboxRecord{
-			EventID: ms[i].EventID, AggregateID: ms[i].AggregateID,
-			EventType: ms[i].EventType, Payload: ms[i].Payload, Attempts: ms[i].Attempts,
-		})
+		for i := range ms {
+			if err := tx.Model(&OutboxModel{}).Where("event_id = ?", ms[i].EventID).Updates(map[string]any{
+				"lease_owner": owner, "lease_expires_at": expires,
+			}).Error; err != nil {
+				return err
+			}
+			out = append(out, &ports.OutboxRecord{
+				EventID: ms[i].EventID, AggregateID: ms[i].AggregateID,
+				EventType: ms[i].EventType, Payload: ms[i].Payload, Attempts: ms[i].Attempts,
+				OccurredAt: ms[i].OccurredAt,
+			})
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	return out, nil
 }
@@ -97,6 +108,15 @@ func (r *auxRepo) MarkOutboxPublished(eventID string) error {
 	now := time.Now().UTC()
 	return r.db.Model(&OutboxModel{}).Where("event_id = ?", eventID).Updates(map[string]any{
 		"published_at": now, "lease_owner": nil, "lease_expires_at": nil,
+	}).Error
+}
+
+// NackOutbox releases a failed publish with attempt backoff and a cleared
+// lease so any instance resumes it.
+func (r *auxRepo) NackOutbox(eventID string, attempts int, nextSendAt time.Time) error {
+	return r.db.Model(&OutboxModel{}).Where("event_id = ?", eventID).Updates(map[string]any{
+		"attempts": attempts, "next_send_at": nextSendAt,
+		"lease_owner": nil, "lease_expires_at": nil,
 	}).Error
 }
 
@@ -126,29 +146,37 @@ func (r *auxRepo) GetWork(txID string) (*ports.WorkItem, error) {
 	}, nil
 }
 
-// ClaimWork takes due work rows with SKIP LOCKED and leases them to owner.
+// ClaimWork takes due work rows and leases them to owner. Like ClaimOutbox,
+// select and lease update are one transaction so concurrent workers never
+// double-claim.
 func (r *auxRepo) ClaimWork(owner string, leaseTTL time.Duration, limit int) ([]*ports.WorkItem, error) {
 	now := time.Now().UTC()
-	var ms []WorkModel
-	if err := lockUpdateSkipLocked(r.db).
-		Where("next_attempt_at <= ? AND (lease_expires_at IS NULL OR lease_expires_at <= ?)", now, now).
-		Order("next_attempt_at ASC").Limit(limit).Find(&ms).Error; err != nil {
-		return nil, err
-	}
-	out := make([]*ports.WorkItem, 0, len(ms))
 	expires := now.Add(leaseTTL)
-	for i := range ms {
-		if err := r.db.Model(&WorkModel{}).Where("transaction_id = ?", ms[i].TransactionID).Updates(map[string]any{
-			"lease_owner": owner, "lease_expires_at": expires,
-		}).Error; err != nil {
-			return nil, err
+	out := make([]*ports.WorkItem, 0, limit)
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		var ms []WorkModel
+		if err := lockUpdateSkipLocked(tx).
+			Where("next_attempt_at <= ? AND (lease_expires_at IS NULL OR lease_expires_at <= ?)", now, now).
+			Order("next_attempt_at ASC").Limit(limit).Find(&ms).Error; err != nil {
+			return err
 		}
-		out = append(out, &ports.WorkItem{
-			TransactionID: ms[i].TransactionID, Kind: ms[i].Kind,
-			RefAttempts: ms[i].RefAttempts, InfraAttempts: ms[i].InfraAttempts,
-			NextAttemptAt: ms[i].NextAttemptAt,
-			LeaseOwner:    owner, LeaseExpiresAt: &expires, CreatedAt: ms[i].CreatedAt,
-		})
+		for i := range ms {
+			if err := tx.Model(&WorkModel{}).Where("transaction_id = ?", ms[i].TransactionID).Updates(map[string]any{
+				"lease_owner": owner, "lease_expires_at": expires,
+			}).Error; err != nil {
+				return err
+			}
+			out = append(out, &ports.WorkItem{
+				TransactionID: ms[i].TransactionID, Kind: ms[i].Kind,
+				RefAttempts: ms[i].RefAttempts, InfraAttempts: ms[i].InfraAttempts,
+				NextAttemptAt: ms[i].NextAttemptAt,
+				LeaseOwner:    owner, LeaseExpiresAt: &expires, CreatedAt: ms[i].CreatedAt,
+			})
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	return out, nil
 }

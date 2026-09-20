@@ -301,14 +301,6 @@ func (s *Service) applyOperation(db ports.DB, oc operationContext) (*SubmitResul
 		return nil, false, err
 	}
 
-	emit := func(eventType string, payload map[string]any) error {
-		return db.Aux().EnqueueOutbox(&ports.OutboxRecord{
-			EventID: s.newID(), AggregateID: w.ID(), EventType: eventType,
-			Payload: mustEventPayload(s.newID(), eventType, w.ID(), in.CorrelationID, now, w.Version(), payload),
-		})
-	}
-	_ = emit
-
 	insertTx := func(state domain.TransactionState, failureCode string, resultBal *domain.Money, refTxID string) (*ports.TxRecord, error) {
 		rec := &ports.TxRecord{
 			ID: txID, Origin: "EXTERNAL",

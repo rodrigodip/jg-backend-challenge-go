@@ -18,13 +18,15 @@ import (
 var ConsumerModule = fx.Module("consumer",
 	fx.Provide(NewStore),
 	fx.Provide(NewWageringService),
-	fx.Provide(NewConsumerClient),
+	fx.Provide(NewSQSClient),
 	fx.Provide(NewConsumer),
 	fx.Invoke(runConsumer),
 )
 
-// NewConsumerClient builds the SQS client with this role's credentials.
-func NewConsumerClient(ctx context.Context, cfg Config) (*sqs.Client, error) {
+// NewSQSClient builds the SQS client with this role's credentials. It is
+// shared by the consumer and workers modules; each role's process carries
+// its own keypair via the standard AWS env (5.3).
+func NewSQSClient(ctx context.Context, cfg Config) (*sqs.Client, error) {
 	return adapter.NewClient(ctx, cfg.SQSEndpoint, cfg.AWSRegion, cfg.AWSAccessKey, cfg.AWSSecretKey)
 }
 
