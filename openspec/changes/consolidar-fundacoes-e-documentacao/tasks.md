@@ -10,10 +10,10 @@
 
 ## 2. Dominio (Money, Wallet, Wagering)
 
-- [ ] 2.1 Implementar `Money` int64 (parse estrito, zero, soma/sub/negacao com overflow, comparacao, serializacao) e verificar unitarios com `-race` (inclui `MinInt64` e USD x BRL)
-- [ ] 2.2 Implementar agregado `Wallet` (criacao/reidratacao, debito/credito, versao so em mudanca de saldo) e verificar unitarios de invariantes e `WALLET_PLAYER_MISMATCH`
-- [ ] 2.3 Implementar `WagerTransaction` + `LedgerEntry` (estados, transicoes, `balanceAfter = before ± amount`, `OPENING` interno) e verificar unitarios de maquina de estados e imutabilidade
-- [ ] 2.4 Implementar regras dos 5 tipos + matriz de reversao com `BET_HAS_ACTIVE_WIN`/`ALREADY_REVERSED` e verificar unitarios de cada aresta da matriz e politica de zero
+- [x] 2.1 Implementar `Money` int64 (parse estrito, zero, soma/sub/negacao com overflow, comparacao, serializacao) e verificar unitarios com `-race` (inclui `MinInt64` e USD x BRL)
+- [x] 2.2 Implementar agregado `Wallet` (criacao/reidratacao, debito/credito, versao so em mudanca de saldo) e verificar unitarios de invariantes e `WALLET_PLAYER_MISMATCH`
+- [x] 2.3 Implementar `WagerTransaction` + `LedgerEntry` (estados, transicoes, `balanceAfter = before ± amount`, `OPENING` interno) e verificar unitarios de maquina de estados e imutabilidade
+- [x] 2.4 Implementar regras dos 5 tipos + matriz de reversao com `BET_HAS_ACTIVE_WIN`/`ALREADY_REVERSED` e verificar unitarios de cada aresta da matriz e politica de zero
 
 ## 3. Persistencia e caso de uso transacional
 
