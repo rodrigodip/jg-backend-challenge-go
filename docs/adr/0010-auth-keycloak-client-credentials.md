@@ -28,3 +28,13 @@ readiness estrito.
 - Isolamento auditável inclusive em replays; sem efeito financeiro em 401/403.
 - `BET_HAS_ACTIVE_WIN`, `IDEMPOTENCY_CONFLICT`, `PROVIDER_FORBIDDEN`
   completam a taxonomia (corrigível / definitivo / `INTERNAL_PERMANENT_FAILURE`).
+
+## Revisão 2026-09-20 (split-horizon iss)
+
+O `iss` passou a vincular o **caminho do realm** (`/realms/wallet`), não o
+host: o Keycloak assina o `iss` a partir do host da requisição e o deployment
+é alcançável por dois aliases do mesmo realm (`keycloak:8080` in-network,
+`localhost:8081` no host). A assinatura sobre as chaves do realm continua
+sendo a garantia de vínculo — realm distinto (`/realms/other`) falha
+fechado. Sem isso, os exemplos autenticados do README seriam 401 a partir
+do host (verificado em checkout limpo, task 7.2).

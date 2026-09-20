@@ -112,11 +112,15 @@ func TestOIDCValidator(t *testing.T) {
 		}
 	})
 
-	t.Run("wrong issuer rejected", func(t *testing.T) {
+	t.Run("host alias accepted, foreign realm rejected", func(t *testing.T) {
 		f := newJWKSFixture(t, issuer)
-		tok := f.mint(t, func(c jwt.MapClaims) { c["iss"] = "http://evil/realms/wallet" })
-		if _, err := f.validator().ValidateToken(ctx, tok); err == nil {
-			t.Fatal("wrong issuer accepted")
+		alias := f.mint(t, func(c jwt.MapClaims) { c["iss"] = "http://localhost:8081/realms/wallet" })
+		if _, err := f.validator().ValidateToken(ctx, alias); err != nil {
+			t.Fatalf("host alias rejected: %v", err)
+		}
+		foreign := f.mint(t, func(c jwt.MapClaims) { c["iss"] = "http://keycloak:8080/realms/other" })
+		if _, err := f.validator().ValidateToken(ctx, foreign); err == nil {
+			t.Fatal("foreign realm accepted")
 		}
 	})
 

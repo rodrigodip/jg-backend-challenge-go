@@ -172,3 +172,52 @@ func TestKeycloakExpiredToken(t *testing.T) {
 		t.Fatalf("expired token = %d %v, want 401", code, body)
 	}
 }
+
+// TestKeycloakIssuerAlias covers the split-horizon deployment: Keycloak
+// signs iss from the request host, so host-minted tokens carry
+// localhost:8081 while the compose api configures keycloak:8080 for the
+// same realm. The validator binds the realm path, not the host, so both
+// aliases authenticate; a different realm path still fails closed.
+func TestKeycloakIssuerAlias(t *testing.T) {
+	tokenA := keycloakToken(t, "provider-a", "provider-a-secret")
+	tokenInternal := keycloakToken(t, "internal-service", "internal-secret")
+
+	aliased := &httpapi.OIDCValidator{
+		Issuer:  "http://keycloak:8080/realms/wallet",
+		JWKSURL: keycloakIssuer + "/protocol/openid-connect/certs",
+	}
+	svc := openService(t)
+	svc.NewID = wagering.NewUUID
+	srv := httptest.NewServer(httpapi.NewEngine(httpapi.NewHandler(svc), aliased, testLogger()))
+	defer srv.Close()
+	c := &httpClient{t: t, base: srv.URL}
+
+	// Host-minted tokens (iss localhost:8081) authenticate against the
+	// in-network issuer name: internal opens a wallet, provider submits.
+	playerID := wagering.NewUUID()
+	code, body, _ := c.do("POST", "/wallets", tokenInternal, nil, map[string]any{
+		"playerId": playerID, "currency": "BRL", "initialAmount": "100.00",
+	})
+	if code != 201 {
+		t.Fatalf("open wallet under aliased issuer = %d %v, want 201", code, body)
+	}
+	walletID, _ := body["walletId"].(string)
+	ext := "bet-" + uid(t)
+	code, body, _ = c.do("POST", "/wagering/transactions", tokenA,
+		map[string]string{"Idempotency-Key": "key-" + uid(t)},
+		oidcTxBody("provider-a", ext, walletID, playerID))
+	if code != 201 {
+		t.Fatalf("submit under aliased issuer = %d %v, want 201", code, body)
+	}
+
+	wrongRealm := &httpapi.OIDCValidator{
+		Issuer:  "http://keycloak:8080/realms/other",
+		JWKSURL: keycloakIssuer + "/protocol/openid-connect/certs",
+	}
+	srv2 := httptest.NewServer(httpapi.NewEngine(httpapi.NewHandler(svc), wrongRealm, testLogger()))
+	defer srv2.Close()
+	c2 := &httpClient{t: t, base: srv2.URL}
+	if code, body, _ := c2.do("GET", "/wallets/"+walletID, tokenA, nil, nil); code != 401 {
+		t.Fatalf("foreign realm path = %d %v, want 401", code, body)
+	}
+}

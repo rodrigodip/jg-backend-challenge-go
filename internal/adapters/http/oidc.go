@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -24,9 +25,16 @@ const jwksCacheTTL = 5 * time.Minute
 // signature, iss, exp/nbf with 30s leeway, realm roles and the provider_id
 // claim. No per-request introspection call is made.
 //
+// Issuer matching is realm-scoped, not host-scoped: Keycloak signs iss from
+// the request host, and this deployment is reachable under two aliases for
+// the same realm (keycloak:8080 in-network, localhost:8081 on the host).
+// Validation requires the configured realm path (e.g. /realms/wallet); the
+// signature over the realm keys remains the binding guarantee, so a foreign
+// realm or keyset still fails closed.
+//
 // Audience: enforced only when the validator is configured with one AND the
 // token carries aud. The wallet realm issues no aud claim (verified against
-// live tokens), so verification rests on iss + signature + roles.
+// live tokens), so verification rests on iss path + signature + roles.
 type OIDCValidator struct {
 	Issuer   string
 	Audience string
@@ -73,8 +81,7 @@ func (v *OIDCValidator) ValidateToken(ctx context.Context, token string) (Identi
 		return Identity{}, ErrUnauthorized
 	}
 	now := time.Now()
-	iss, err := claims.GetIssuer()
-	if err != nil || iss != v.Issuer {
+	if err := checkIssuer(v.Issuer, claims); err != nil {
 		return Identity{}, ErrUnauthorized
 	}
 	if exp, err := claims.GetExpirationTime(); err != nil || exp == nil || now.After(exp.Time.Add(v.leeway())) {
@@ -106,6 +113,31 @@ func (v *OIDCValidator) ValidateToken(ctx context.Context, token string) (Identi
 		return Identity{}, ErrUnauthorized
 	}
 	return Identity{ProviderID: providerID, Roles: roles}, nil
+}
+
+// checkIssuer binds the token to the configured realm by URL path: the same
+// realm served under another host alias (in-network vs host) validates,
+// while a different realm path fails closed even with a parseable token.
+func checkIssuer(configured string, claims jwt.MapClaims) error {
+	iss, err := claims.GetIssuer()
+	if err != nil {
+		return err
+	}
+	if iss == "" {
+		return fmt.Errorf("missing issuer")
+	}
+	want, err := url.Parse(configured)
+	if err != nil || want.Path == "" {
+		return err
+	}
+	got, err := url.Parse(iss)
+	if err != nil {
+		return err
+	}
+	if got.Path != want.Path {
+		return fmt.Errorf("unexpected issuer path %q", got.Path)
+	}
+	return nil
 }
 
 func audContains(aud jwt.ClaimStrings, want string) bool {

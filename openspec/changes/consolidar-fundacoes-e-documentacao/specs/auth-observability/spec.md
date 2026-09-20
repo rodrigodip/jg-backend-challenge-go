@@ -8,7 +8,7 @@ Garante que so identidades verificadas operem dinheiro, que provedores vejam ape
 
 ### Requirement: Autenticacao OIDC com Keycloak
 
-O sistema SHALL exigir autenticacao em todos os endpoints de negocio via IdP externo OAuth 2.0/OIDC (Keycloak com realm importado, `client_credentials`), validar JWT localmente por JWKS (assinatura, `iss`, `aud`, `exp`, `nbf`, tolerancia de relogio de 30s), rejeitar credencial ausente, invalida ou expirada com `401`, e SHALL extrair `providerId` de claim com protocol mapper (nunca do corpo sem conferir).
+O sistema SHALL exigir autenticacao em todos os endpoints de negocio via IdP externo OAuth 2.0/OIDC (Keycloak com realm importado, `client_credentials`), validar JWT localmente por JWKS (assinatura, `iss` vinculado ao caminho do realm — o host pode variar entre aliases do mesmo deployment, p.ex. `keycloak:8080` in-network e `localhost:8081` no host —, `aud`, `exp`, `nbf`, tolerancia de relogio de 30s), rejeitar credencial ausente, invalida ou expirada com `401`, e SHALL extrair `providerId` de claim com protocol mapper (nunca do corpo sem conferir).
 
 #### Scenario: Token expirado
 
