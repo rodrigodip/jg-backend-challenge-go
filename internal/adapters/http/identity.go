@@ -1,7 +1,7 @@
 // Package httpapi holds the gin HTTP handlers and routes (block 4).
 //
 // Authentication is enforced on every business route through the Validator
-// interface: production binds the OIDC/Keycloak validator (task 4.2), while
+// interface: production binds the OIDC/Keycloak validator , while
 // contract tests bind StaticValidator. Identities carry the provider scope
 // and roles; handlers map them to 401/403 without leaking data.
 package httpapi

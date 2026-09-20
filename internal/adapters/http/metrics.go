@@ -14,10 +14,10 @@ import (
 // the existing admin /metrics endpoint (promhttp) exposes them without
 // further wiring.
 //
-// Block 4 covers what the api role can observe: outcomes by status,
+// Auth covers what the api role can observe: outcomes by status,
 // idempotent replays (duplicates), idempotency conflicts, request latency
 // and reconciliation divergences. Retries, DLQ moves and outbox age belong
-// to the consumer/workers roles and land with block 5.
+// to the consumer/workers roles and land with auth.
 var (
 	txResults = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "wallet_tx_results_total",

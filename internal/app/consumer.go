@@ -25,7 +25,7 @@ var ConsumerModule = fx.Module("consumer",
 
 // NewSQSClient builds the SQS client with this role's credentials. It is
 // shared by the consumer and workers modules; each role's process carries
-// its own keypair via the standard AWS env (5.3).
+// its own keypair via the standard AWS env.
 func NewSQSClient(ctx context.Context, cfg Config) (*sqs.Client, error) {
 	return adapter.NewClient(ctx, cfg.SQSEndpoint, cfg.AWSRegion, cfg.AWSAccessKey, cfg.AWSSecretKey)
 }

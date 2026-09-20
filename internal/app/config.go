@@ -35,7 +35,7 @@ type Config struct {
 	// no aud claim, so empty means "no audience check" (iss + signature +
 	// roles + provider_id carry the verification).
 	OIDCAudience string
-	// Broker credentials and queues (5.3). Compose assigns one keypair per
+	// Broker credentials and queues. Compose assigns one keypair per
 	// role (consumer vs publisher); empty keys fall back to the SDK default
 	// chain. Queue names default to the provisioned FIFO queues.
 	AWSRegion      string

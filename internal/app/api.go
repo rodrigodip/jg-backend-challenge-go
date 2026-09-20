@@ -38,7 +38,7 @@ func NewWageringService(store *postgres.Store) *wagering.Service {
 	return &wagering.Service{DB: store, Clock: ports.SystemClock{}}
 }
 
-// NewValidator binds the OIDC/Keycloak validator from Config (task 4.2).
+// NewValidator binds the OIDC/Keycloak validator from Config.
 // The JWKS URL derives from the issuer's standard discovery path. Auth
 // fails fast at startup when no issuer is configured.
 func NewValidator(cfg Config) (httpapi.Validator, error) {

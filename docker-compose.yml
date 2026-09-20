@@ -20,7 +20,7 @@ services:
       timeout: 3s
       retries: 10
     ports:
-      # Host uses 5433: the developer machine already runs a system
+      # Host uses 5433 to avoid possible conflicts with developers machine 
       # PostgreSQL on 5432. Containers keep talking to postgres:5432.
       - "5433:5432"
     # Dev convenience: resume what was running after a host reboot.

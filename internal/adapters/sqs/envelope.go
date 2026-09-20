@@ -1,5 +1,5 @@
 // Package sqs holds the SQS consumer, the outbox publisher and queue
-// helpers (block 5).
+// helpers.
 //
 // The consumer shares the wagering.Service use-case with HTTP, so financial
 // guarantees (idempotency, replay, ledger) are identical on both channels.
@@ -7,10 +7,9 @@
 // the same commit as the treatment; the queue message is deleted only after
 // that commit.
 //
-// Broker limits (documented for 5.3, verified against MiniStack 1.5.13):
-// the emulator accepts any credentials, including bogus ones, serves every
-// queue from the same default account and enforces no queue policy or role
-// separation. Per-role keypairs (consumer, publisher) are still wired
+// Broker limits: the emulator accepts any credentials, including bogus ones,
+// serves every queue from the same default account and enforces no queue policy
+// or role separation. Per-role keypairs (consumer, publisher) are still wired
 // end-to-end so the topology matches production, but correctness never
 // depends on the broker: the consumer revalidates every domain rule,
 // dedupes by inbox hash and preserves money on redelivery.
@@ -24,7 +23,7 @@ import (
 
 // OperationData is the business content of one wager message. Field names
 // mirror the HTTP contract so the same operation hashes identically on both
-// channels (double-uniqueness handler, block 3.2).
+// channels (double-uniqueness handler).
 type OperationData struct {
 	ProviderID            string `json:"providerId"`
 	ExternalTransactionID string `json:"externalTransactionId"`
