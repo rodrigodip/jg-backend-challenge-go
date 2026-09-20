@@ -2,8 +2,10 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,11 +17,7 @@ import (
 )
 
 // ApiModule wires the api role (D1): postgres store, wagering service,
-// validator, handler and gin engine, plus the public server lifecycle.
-//
-// The validator binding is a closed StaticValidator until task 4.2 binds
-// the OIDC/Keycloak validator: business endpoints answer 401, health stays
-// public.
+// OIDC validator, handler and gin engine, plus the public server lifecycle.
 var ApiModule = fx.Module("api",
 	fx.Provide(NewStore),
 	fx.Provide(NewWageringService),
@@ -40,10 +38,18 @@ func NewWageringService(store *postgres.Store) *wagering.Service {
 	return &wagering.Service{DB: store, Clock: ports.SystemClock{}}
 }
 
-// NewValidator provides the bearer validator. Placeholder for task 4.2:
-// deny-closed until the OIDC issuer is wired.
-func NewValidator() httpapi.Validator {
-	return httpapi.StaticValidator{Tokens: map[string]httpapi.Identity{}}
+// NewValidator binds the OIDC/Keycloak validator from Config (task 4.2).
+// The JWKS URL derives from the issuer's standard discovery path. Auth
+// fails fast at startup when no issuer is configured.
+func NewValidator(cfg Config) (httpapi.Validator, error) {
+	if cfg.OIDCIssuer == "" {
+		return nil, fmt.Errorf("OIDC_ISSUER is required in api mode")
+	}
+	return &httpapi.OIDCValidator{
+		Issuer:   cfg.OIDCIssuer,
+		Audience: cfg.OIDCAudience,
+		JWKSURL:  strings.TrimSuffix(cfg.OIDCIssuer, "/") + "/protocol/openid-connect/certs",
+	}, nil
 }
 
 // NewPublicEngine builds the gin engine with strict readiness from Config.
