@@ -27,7 +27,10 @@ var WorkersModule = fx.Module("workers",
 )
 
 // NewPublisher resolves the events queue and builds the broker publisher.
-func NewPublisher(ctx context.Context, client *sqs.Client, cfg Config, log *slog.Logger) (*adapter.SQSPublisher, error) {
+// Like NewSQSClient, it bounds its own startup context (see consumer.go).
+func NewPublisher(client *sqs.Client, cfg Config, log *slog.Logger) (*adapter.SQSPublisher, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	eventsURL, err := adapter.QueueURL(ctx, client, cfg.SQSEventsQueue)
 	if err != nil {
 		return nil, err

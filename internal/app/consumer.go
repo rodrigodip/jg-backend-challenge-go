@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/jg-backend-challenge/wallet/internal/adapters/postgres"
@@ -25,13 +26,19 @@ var ConsumerModule = fx.Module("consumer",
 
 // NewSQSClient builds the SQS client with this role's credentials. It is
 // shared by the consumer and workers modules; each role's process carries
-// its own keypair via the standard AWS env.
-func NewSQSClient(ctx context.Context, cfg Config) (*sqs.Client, error) {
+// its own keypair via the standard AWS env. Fx cannot inject
+// context.Context into constructors, so startup calls use their own bounded
+// context instead of the (unavailable) start context.
+func NewSQSClient(cfg Config) (*sqs.Client, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	return adapter.NewClient(ctx, cfg.SQSEndpoint, cfg.AWSRegion, cfg.AWSAccessKey, cfg.AWSSecretKey)
 }
 
 // NewConsumer resolves the queues and builds the poller.
-func NewConsumer(ctx context.Context, client *sqs.Client, cfg Config, store *postgres.Store, log *slog.Logger) (*adapter.Consumer, error) {
+func NewConsumer(client *sqs.Client, cfg Config, store *postgres.Store, log *slog.Logger) (*adapter.Consumer, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	queueURL, err := adapter.QueueURL(ctx, client, cfg.SQSTxQueue)
 	if err != nil {
 		return nil, err
