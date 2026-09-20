@@ -1,0 +1,7 @@
+.git
+.NOTES
+.obsidian
+.opencode
+openspec/changes
+bin/
+*.test
