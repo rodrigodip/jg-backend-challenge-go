@@ -62,9 +62,12 @@ Limites do emulador (policies não aplicadas, handles obsoletos) em
 
 ## Migrations
 
-Versionadas com goose (`migrations/`, job `migrate` no compose):
+Versionadas com goose (`migrations/`, job `migrate` no compose).
+Migrations exigem o papel `owner` (DDL); do host, exporte a URL com a
+porta publicada (`5433`) — o `.env` traz o host in-network (`postgres`):
 
 ```bash
+export DATABASE_URL=postgres://owner:ownersecret@localhost:5433/wallet?sslmode=disable
 make migrate-up     # aplica pendentes
 make migrate-down   # reverte TUDO (pede confirmação; down-to 0)
 ```
