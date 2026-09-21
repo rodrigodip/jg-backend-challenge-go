@@ -96,6 +96,10 @@ curl -s -X POST http://localhost:8080/wagering/transactions \
   -H 'Idempotency-Key: <chave-unica>' \
   -d '{"providerId":"provider-a","externalTransactionId":"<ext>","playerId":"<uuid>","walletId":"<id>","roundId":"r1","gameId":"g1","kind":"BET","amount":"80.00","currency":"BRL"}'
 
+# Consulta da própria transação pelo id externo (provedor) -> 200;
+# caminho de outro provedor -> 403; id externo desconhecido/alheio -> 404
+curl -s -H "Authorization: Bearer $A" http://localhost:8080/providers/provider-a/wagering/transactions/<ext>
+
 # Ledger + reconciliação (internal)
 curl -s -H "Authorization: Bearer $I" http://localhost:8080/wallets/<id>/ledger
 curl -s -H "Authorization: Bearer $I" http://localhost:8080/wallets/<id>/reconciliation

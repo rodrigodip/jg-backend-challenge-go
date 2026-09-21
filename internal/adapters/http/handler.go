@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jg-backend-challenge/wallet/internal/domain"
+	"github.com/jg-backend-challenge/wallet/internal/ports"
 	"github.com/jg-backend-challenge/wallet/internal/wagering"
 )
 
@@ -39,6 +40,7 @@ func (h *Handler) RegisterRoutes(public, protected *gin.RouterGroup) {
 
 	protected.POST("/wagering/transactions", h.submitTransaction)
 	protected.GET("/wagering/transactions/:id", h.getTransaction)
+	protected.GET("/providers/:providerId/wagering/transactions/:externalTransactionId", h.getTransactionByExternal)
 }
 
 // ReadyFunc reports strict readiness of dependencies.
@@ -244,6 +246,13 @@ func (h *Handler) getTransaction(c *gin.Context) {
 			return
 		}
 	}
+	c.JSON(http.StatusOK, transactionBody(rec))
+}
+
+// transactionBody renders the shared read contract for a wager transaction,
+// used identically by the UUID and provider-scoped external-id routes so
+// the two reads cannot drift.
+func transactionBody(rec *ports.TxRecord) gin.H {
 	body := gin.H{
 		"transactionId":    rec.ID,
 		"kind":             rec.Kind,
@@ -271,7 +280,37 @@ func (h *Handler) getTransaction(c *gin.Context) {
 	if rec.WalletVersionObserved != nil {
 		body["walletVersion"] = *rec.WalletVersionObserved
 	}
-	c.JSON(http.StatusOK, body)
+	return body
+}
+
+// getTransactionByExternal is GET /providers/:providerId/wagering/transactions/:externalTransactionId.
+// The (providerId, externalTransactionId) resolution is inherently scoped to
+// the provider, so a foreign or unknown external id answers 404 without
+// leaking data. Providers must use their own providerId in the path;
+// internal reads any provider's transaction.
+func (h *Handler) getTransactionByExternal(c *gin.Context) {
+	ident, ok := IdentityFrom(c)
+	if !ok {
+		abortError(c, http.StatusForbidden, "PROVIDER_FORBIDDEN", "forbidden")
+		return
+	}
+	providerID := c.Param("providerId")
+	if !ident.HasRole(RoleInternal) {
+		if !ident.HasRole(RoleProvider) || providerID != ident.ProviderID {
+			abortError(c, http.StatusForbidden, "PROVIDER_FORBIDDEN", "forbidden")
+			return
+		}
+	}
+	rec, err := h.Svc.DB.Tx().FindByProviderExternal(providerID, c.Param("externalTransactionId"))
+	if err != nil {
+		writeInfraError(c, err)
+		return
+	}
+	if rec == nil {
+		abortError(c, http.StatusNotFound, "TRANSACTION_NOT_FOUND", "transaction not found")
+		return
+	}
+	c.JSON(http.StatusOK, transactionBody(rec))
 }
 
 // writeSubmitResult maps the durable outcome to the HTTP contract: 201 first

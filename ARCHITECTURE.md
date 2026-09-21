@@ -60,6 +60,30 @@ infra (sem evento); `REJECTED` é regra de negócio (persistido + evento).
 
 Trilha: `ADR-0003 (D12–D15) · README.md (solução) § Testes`.
 
+### 3.1. Divergências de contrato em relação ao enunciado (§9)
+
+O contrato HTTP implementado diverge dos exemplos literais de
+`REQUISITOS.md` §9 em forma, método e uma rota. As divergências são
+deliberadas e documentadas como interpretação adotada; as cláusulas
+normativas do §9 (idempotência, códigos distinguíveis, cursor opaco,
+isolamento de provedor, reconciliação e health) permanecem cumpridas e
+testadas. A rota de leitura provider-scoped, antes ausente, foi
+implementada neste change.
+
+| Divergência | Enunciado (§9) | Implementado | Justificativa |
+| --- | --- | --- | --- |
+| Dinheiro na entrada | `money: {amount, currency}` | `amount` + `currency` flat | O hash canônico de idempotência (`internal/wagering/hash.go`) já canonicaliza os campos para a forma `money` do enunciado, preservando equivalência HTTP/SQS; as formas flat e objeto convergem no mesmo hash |
+| Abertura de carteira | `initialBalance: {amount, currency}` | `initialAmount` + `currency` | Mesma informação com campos flat; dinheiro segue em string decimal, nunca float |
+| Identificador da carteira na resposta | `id` | `walletId` | Nome descreve o recurso e é consistente com os demais corpos e com o uso do `walletId` no restante da API |
+| Reconciliação | `POST /wallets/:walletId/reconciliation` | `GET /wallets/:walletId/reconciliation` | A reconciliação é leitura pura — o próprio §9 determina que "não deve alterar o saldo" —, portanto `GET` expressa a semântica real e evita efeitos colaterais |
+| Leitura por id externo | `GET /providers/:providerId/wagering/transactions/:externalTransactionId` | Implementada (esta mudança) | Fechou o gap funcional: o provedor conhece o `externalTransactionId`, não o UUID interno |
+
+A leitura provider-scoped responde `404` para id externo de outro provedor
+(ou desconhecido): a resolução por `(providerId, externalTransactionId)` é
+intrinsecamente restrita ao provedor, então não há vazamento nem como
+distinguir a transação alheia de uma ausente; `403 PROVIDER_FORBIDDEN` fica
+reservado ao `providerId` do caminho divergente da identidade.
+
 ## 4. Idempotência em duas camadas
 
 **Financeira:** chave opaca obrigatória (`Idempotency-Key`, 1–255, espaços

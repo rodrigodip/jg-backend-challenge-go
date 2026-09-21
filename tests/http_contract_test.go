@@ -282,6 +282,39 @@ func TestHTTPContract(t *testing.T) {
 		t.Fatalf("get missing tx = %d, want 404", code)
 	}
 
+	// Provider-scoped read by external id (REQUISITOS §9 Leitura).
+	if code, body, _ := c.do("GET", "/providers/provider-a/wagering/transactions/"+extBet, "token-a", nil, nil); code != 200 {
+		t.Fatalf("provider-scoped read = %d %v, want 200", code, body)
+	} else {
+		if body["transactionId"] != txID || body["status"] != "PROCESSED" {
+			t.Fatalf("provider-scoped read body mismatch: %v", body)
+		}
+		if bal, _ := body["balance"].(map[string]any)["amount"].(string); bal != "75.00" {
+			t.Fatalf("provider-scoped read balance = %v, want 75.00", body["balance"])
+		}
+	}
+	// Unauthenticated access to the provider-scoped route -> 401.
+	if code, _, _ := c.do("GET", "/providers/provider-a/wagering/transactions/"+extBet, "", nil, nil); code != 401 {
+		t.Fatalf("provider-scoped read unauthenticated = %d, want 401", code)
+	}
+	// Path providerId diverging from the identity -> 403 with no data.
+	if code, body, _ := c.do("GET", "/providers/provider-b/wagering/transactions/"+extBet, "token-a", nil, nil); code != 403 || body["code"] != "PROVIDER_FORBIDDEN" {
+		t.Fatalf("provider-scoped divergent path = %d %v, want 403 PROVIDER_FORBIDDEN", code, body)
+	} else if _, ok := body["transactionId"]; ok {
+		t.Fatalf("403 leaked transaction data: %v", body)
+	}
+	// External id of another provider (or unknown) under the own path -> 404.
+	if code, _, _ := c.do("GET", "/providers/provider-a/wagering/transactions/ext-of-provider-b", "token-a", nil, nil); code != 404 {
+		t.Fatalf("provider-scoped foreign external id = %d, want 404", code)
+	}
+	if code, _, _ := c.do("GET", "/providers/provider-a/wagering/transactions/unknown-ext-"+uid(t), "token-a", nil, nil); code != 404 {
+		t.Fatalf("provider-scoped unknown external id = %d, want 404", code)
+	}
+	// Internal reads any provider's transaction by external id.
+	if code, body, _ := c.do("GET", "/providers/provider-a/wagering/transactions/"+extBet, "token-internal", nil, nil); code != 200 || body["transactionId"] != txID {
+		t.Fatalf("provider-scoped internal read = %d %v, want 200", code, body)
+	}
+
 	// Ledger page + invalid cursor.
 	if code, page, _ := c.do("GET", "/wallets/"+walletID+"/ledger?limit=50", "token-internal", nil, nil); code != 200 {
 		t.Fatalf("ledger = %d %v, want 200", code, page)
