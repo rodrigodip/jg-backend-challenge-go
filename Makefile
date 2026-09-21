@@ -30,7 +30,8 @@ test-race: ## Run unit tests with the race detector
 
 test-integration: ## Run integration tests (needs up; stops consumer/workers: they race test-local publishers over the shared outbox)
 	docker compose stop consumer workers
-	go test -tags integration ./tests/ -timeout 5m
+	@for q in wager-events.fifo wager-transactions.fifo wager-events-dlq.fifo wager-transactions-dlq.fifo; do curl -sf -X POST http://localhost:4566/ --data-urlencode "Action=PurgeQueue" --data-urlencode "Version=2012-11-05" --data-urlencode "QueueUrl=http://localhost:4566/000000000000/$$q" > /dev/null && echo "PurgeQueue $$q OK" || echo "PurgeQueue $$q skipped"; done; true
+	go test -tags integration -count=1 ./tests/ -timeout 5m; status=$$?; docker compose up -d consumer workers > /dev/null; exit $$status
 
 k6: ## Run the k6 load scenario against 3 api replicas (see docs/k6-report.md)
 	docker compose -f docker-compose.yml -f docker-compose.load.yml up --build -d --scale api=3

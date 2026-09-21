@@ -44,12 +44,19 @@ var errStubPublish = stubError{}
 
 // drainEvents receives and deletes events-queue messages for one wallet,
 // returning the eventIds seen. Every envelope must carry the wallet version
-// for consumer ordering.
+// for consumer ordering. It polls until two consecutive empty rounds (the
+// queue may hold unrelated backlog ahead of this wallet's events) with an
+// overall deadline so a genuinely missing delivery still fails fast.
 func drainEvents(t *testing.T, client *sqs.Client, eventsURL, walletID string) []string {
 	t.Helper()
 	ctx := context.Background()
 	var seen []string
-	for i := 0; i < 10; i++ {
+	deadline := time.Now().Add(70 * time.Second)
+	empty := 0
+	for i := 0; i < 30 && empty < 2; i++ {
+		if time.Now().After(deadline) {
+			break
+		}
 		out, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
 			QueueUrl: &eventsURL, MaxNumberOfMessages: 10, WaitTimeSeconds: 2,
 		})
@@ -57,8 +64,10 @@ func drainEvents(t *testing.T, client *sqs.Client, eventsURL, walletID string) [
 			t.Fatal(err)
 		}
 		if len(out.Messages) == 0 {
-			break
+			empty++
+			continue
 		}
+		empty = 0
 		for _, m := range out.Messages {
 			var env struct {
 				EventID     string         `json:"eventId"`

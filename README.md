@@ -137,6 +137,16 @@ Build tag: `integration` (arquivos em `tests/`, infra real — sem mocks).
 
 `make test-integration` para `consumer`/`workers` antes: os workers
 publicam o outbox compartilhado e disputariam os publishers dos testes.
+O alvo também purga as filas SQS locais e religa os serviços ao final,
+sempre com `-count=1` (sem cache). Sequência após carga:
+
+```bash
+make k6                          # deixa 3×api + backlog nas filas locais
+docker compose up -d             # volta a 1×api (publica portas)
+make test-integration            # purga filas, roda suite, religa workers
+```
+
+Detalhes em `docs/k6-report.md`.
 
 ## Solução de problemas
 
