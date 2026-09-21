@@ -1,7 +1,7 @@
 # ADR-0002: Binário único com modos Fx
 
 - Status: aceito
-- IDs: D02, D05, D06 · Base: README §4 · Spec: `auth-observability`
+- IDs: D02, D05, D06 · Base: REQUISITOS.md §4 · Spec: `auth-observability`
 
 ## Contexto
 

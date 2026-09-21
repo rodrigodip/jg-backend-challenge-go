@@ -1,7 +1,7 @@
 # ADR-0005: Concorrência por carteira com `FOR UPDATE`
 
 - Status: aceito
-- IDs: D16, D30 · Base: README §§5, 8 · Spec: `wallet-ledger`
+- IDs: D16, D30 · Base: REQUISITOS.md §§5, 8 · Spec: `wallet-ledger`
 
 ## Contexto
 

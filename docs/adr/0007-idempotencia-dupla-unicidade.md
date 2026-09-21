@@ -1,7 +1,7 @@
 # ADR-0007: Idempotência financeira + transporte
 
 - Status: aceito
-- IDs: D18(revisto), D19, D20, D39, D45 · Base: README §§5, 9, 10 · Specs: `idempotency-contracts`, `messaging`
+- IDs: D18(revisto), D19, D20, D39, D45 · Base: REQUISITOS.md §§5, 9, 10 · Specs: `idempotency-contracts`, `messaging`
 
 ## Contexto
 

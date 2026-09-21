@@ -2,9 +2,9 @@
 
 Log auditável das decisões de arquitetura do desafio. Cada ADR registra
 contexto, decisão e consequências; o `ARCHITECTURE.md` (exigido pelo
-README §15) é a síntese narrativa, e as specs em
-`openspec/changes/consolidar-fundacoes-e-documentacao/specs/` são os
-contratos testáveis. Em caso de divergência, vale o `README.md` do desafio.
+REQUISITOS.md §15) é a síntese narrativa, e as specs em
+`openspec/specs/` são os contratos testáveis. Em caso de divergência,
+vale o `REQUISITOS.md`.
 
 Convenção: MADR enxuto em PT. Status possíveis: `aceito`, `proposto`,
 `substituído`. IDs `Dxx/Kxx` preservam a rastreabilidade com o

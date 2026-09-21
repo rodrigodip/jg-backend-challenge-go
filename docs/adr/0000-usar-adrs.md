@@ -14,12 +14,12 @@ contradizê-lo".
 ## Decisão
 
 Registrar decisões em ADRs sob `docs/adr/` (MADR enxuto, em PT), um por
-cluster, com links para `README.md §`, specs e IDs `Dxx/Kxx` originais.
+cluster, com links para `REQUISITOS.md §`, specs e IDs `Dxx/Kxx` originais.
 `ARCHITECTURE.md` segue como síntese exigida pelo §15; specs seguem como
 contratos testáveis.
 
 ## Consequências
 
-- Uma só fonte por camada: README (desafio) → ADRs (porquê) → specs (o quê).
+- Uma só fonte por camada: REQUISITOS.md → ADRs (porquê) → specs (o quê).
 - O arquivo de pré-processamento é removido no mesmo commit; git preserva o histórico.
 - `tasks.md` 7.1 da change de fundação passa a rastrear ADRs.

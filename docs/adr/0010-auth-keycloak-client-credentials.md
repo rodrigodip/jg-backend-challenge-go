@@ -1,7 +1,7 @@
 # ADR-0010: Auth OIDC com Keycloak
 
 - Status: aceito
-- IDs: D31(revisto), D32–D36, D41, D45–D51, D54, D55 · Base: README §§2, 9, 12 · Specs: `idempotency-contracts`, `auth-observability`
+- IDs: D31(revisto), D32–D36, D41, D45–D51, D54, D55 · Base: REQUISITOS.md §§2, 9, 12 · Specs: `idempotency-contracts`, `auth-observability`
 
 ## Contexto
 
@@ -36,5 +36,5 @@ host: o Keycloak assina o `iss` a partir do host da requisição e o deployment
 é alcançável por dois aliases do mesmo realm (`keycloak:8080` in-network,
 `localhost:8081` no host). A assinatura sobre as chaves do realm continua
 sendo a garantia de vínculo — realm distinto (`/realms/other`) falha
-fechado. Sem isso, os exemplos autenticados do README seriam 401 a partir
-do host (verificado em checkout limpo, task 7.2).
+fechado. Sem isso, os exemplos autenticados do README.md (solução) seriam 401
+a partir do host (verificado em checkout limpo, task 7.2).

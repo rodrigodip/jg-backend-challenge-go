@@ -1,7 +1,7 @@
 # ADR-0009: Outbox transacional best-effort
 
 - Status: aceito
-- IDs: D40a, D42–D44 · Base: README §§5, 11 · Spec: `messaging`
+- IDs: D40a, D42–D44 · Base: REQUISITOS.md §§5, 11 · Spec: `messaging`
 
 ## Contexto
 

@@ -1,11 +1,11 @@
 # ADR-0003: Persistência — GORM contido
 
 - Status: aceito
-- IDs: D07, D08, D09, D12–D15 · Base: README §§4, 5, 6 · Specs: `wallet-ledger`, `wagering`
+- IDs: D07, D08, D09, D12–D15 · Base: REQUISITOS.md §§4, 5, 6 · Specs: `wallet-ledger`, `wagering`
 
 ## Contexto
 
-O README prefere `pgx` com SQL explícito; GORM é aceito desde que transações,
+O REQUISITOS.md prefere `pgx` com SQL explícito; GORM é aceito desde que transações,
 locks e constraints fiquem explícitos e verificáveis. Exige ainda migrations
 versionadas com up/down e ledger append-only garantido no banco.
 

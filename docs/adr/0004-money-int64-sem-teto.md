@@ -1,11 +1,11 @@
 # ADR-0004: Money em `int64`, sem teto de negócio
 
 - Status: aceito
-- IDs: D10, D11(revisto), D21, D23 · Base: README §6.1 · Spec: `money`
+- IDs: D10, D11(revisto), D21, D23 · Base: REQUISITOS.md §6.1 · Spec: `money`
 
 ## Contexto
 
-O README proíbe `float32/64` em todo o caminho, exige escala fixa de 2 casas
+O REQUISITOS.md proíbe `float32/64` em todo o caminho, exige escala fixa de 2 casas
 e rejeição sem arredondamento silencioso, mas não impõe teto de valor. O
 pré-processamento impunha 1M por entrada — restrição extra que reprovaria
 high-rollers e testes com valores altos.

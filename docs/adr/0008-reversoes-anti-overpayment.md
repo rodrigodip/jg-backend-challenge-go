@@ -1,11 +1,11 @@
 # ADR-0008: Reversões seamless anti-overpayment
 
 - Status: aceito
-- IDs: D24, D24b, D26, D28 · Base: README §7 · Spec: `wagering`
+- IDs: D24, D24b, D26, D28 · Base: REQUISITOS.md §7 · Spec: `wagering`
 
 ## Contexto
 
-O README exige documentar combinações REFUND×ROLLBACK sobre a mesma aposta e
+O REQUISITOS.md exige documentar combinações REFUND×ROLLBACK sobre a mesma aposta e
 impedir devolução duplicada; não define o caso clássico de overpayment
 (stake de volta + prêmio). Padrão seamless de igaming: refund só de BET,
 rollback como void.

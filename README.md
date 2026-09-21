@@ -1,5 +1,8 @@
 # Carteira Seamless — solução em Go
 
+> Enunciado original do desafio (definição de pronto) em
+> [`REQUISITOS.md`](REQUISITOS.md).
+
 Processamento distribuído de apostas com precisão monetária, ledger
 auditável e correção sob concorrência e falhas: API HTTP + consumidor SQS
 com garantias equivalentes, carteiras com saldo nunca negativo,

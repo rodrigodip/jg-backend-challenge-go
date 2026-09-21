@@ -1,11 +1,11 @@
 # ADR-0001: Emulador SQS — MiniStack
 
 - Status: aceito
-- IDs: D37 · Base: README §§4, 10, 15 · Spec: `messaging`
+- IDs: D37 · Base: REQUISITOS.md §§4, 10, 15 · Spec: `messaging`
 
 ## Contexto
 
-O README permite LocalStack ou MiniStack localmente e exige reprodução a
+O REQUISITOS.md permite LocalStack ou MiniStack localmente e exige reprodução a
 partir de checkout limpo sem segredos reais (§15).
 
 ## Decisão

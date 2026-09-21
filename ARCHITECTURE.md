@@ -8,7 +8,8 @@ Este documento é a síntese narrativa; os porquês vivem nos ADRs
 operação no [README](README.md) e em [`docs/k6-report.md`](docs/k6-report.md).
 
 Convenção: cada seção termina com a trilha
-`ADR-xxxx · D-ids · README §seção`.
+`ADR-xxxx · D-ids · README.md (solução) §seção` ou `REQUISITOS.md §N`
+(enunciado do desafio).
 
 ## 1. Visão geral
 
@@ -35,7 +36,7 @@ provider-a/b (Keycloak client_credentials)
 +------------------+
 ```
 
-Trilha: `ADR-0002 (D02, D05, D06) · README §§ Ambiente, Modos de operação`.
+Trilha: `ADR-0002 (D02, D05, D06) · README.md (solução) §§ Ambiente, Modos de operação`.
 
 ## 2. Dinheiro (Money)
 
@@ -45,7 +46,7 @@ negação (inclui `MinInt64`), **sem teto de negócio além do `int64`**.
 Persiste como `BIGINT` + `CHAR(3)`; BRL principal, USD para
 incompatibilidade. Float é proibido em todo o caminho (§5).
 
-Trilha: `ADR-0004 (D10, D11, D21, D23) · README § Testes (unitários)`.
+Trilha: `ADR-0004 (D10, D11, D21, D23) · README.md (solução) § Testes (unitários)`.
 
 ## 3. Transações e máquina de estados
 
@@ -57,7 +58,7 @@ PENDING_REFERENCE | FAILED`, `PENDING_REFERENCE → PROCESSED | REJECTED |
 FAILED`; terminais nunca transitam. `FAILED` é só falha permanente de
 infra (sem evento); `REJECTED` é regra de negócio (persistido + evento).
 
-Trilha: `ADR-0003 (D12–D15) · README § Testes`.
+Trilha: `ADR-0003 (D12–D15) · README.md (solução) § Testes`.
 
 ## 4. Idempotência em duas camadas
 
@@ -74,7 +75,7 @@ mesmo `messageId` + conteúdo igual → replay; conteúdo divergente →
 envenenamento → DLQ. Correlação: `X-Correlation-Id` ou gerado; SQS deriva
 do `messageId`; logs, métricas e spans OTel-stdout compartilham o valor.
 
-Trilha: `ADR-0007 (D18–D20, D39, D45) · README §§ Exemplos, Testes`.
+Trilha: `ADR-0007 (D18–D20, D39, D45) · README.md (solução) §§ Exemplos, Testes`.
 
 ## 5. Concorrência: lock por carteira
 
@@ -86,7 +87,7 @@ sem deadlock na cascata. Carteiras distintas avançam em paralelo sem lost
 updates; 3 instâncias independentes sobre o mesmo banco convergem
 (`tests/concurrency_test.go`: 100/80/80 decide exatamente um vencedor).
 
-Trilha: `ADR-0005 (D16, D30) · README § Testes (concorrência)`.
+Trilha: `ADR-0005 (D16, D30) · README.md (solução) § Testes (concorrência)`.
 
 ## 6. Referências pendentes e work-table
 
@@ -100,7 +101,7 @@ REFERENCE_NOT_FOUND` + evento; referência terminal sem sucesso →
 `REFERENCE_NOT_PROCESSED`. Kill após `PENDING` é retomado por outra
 instância por construção (§13.8; `tests/recovery_test.go`, `resume_test.go`).
 
-Trilha: `ADR-0006 (D17, D25, D27, D29c) · README § Testes (falhas)`.
+Trilha: `ADR-0006 (D17, D25, D27, D29c) · README.md (solução) § Testes (falhas)`.
 
 ## 7. Reversões seamless anti-overpayment
 
@@ -114,7 +115,7 @@ integrais, concordância em provedor/jogador/carteira/moeda/rodada; reversão
 que quebraria o saldo → `ROLLBACK_INSUFFICIENT_BALANCE`. `WIN` com
 referência exige `BET` processada não revertida (mesma rodada/carteira/moeda).
 
-Trilha: `ADR-0008 (D24, D26, D28) · README § Testes (unitários)`.
+Trilha: `ADR-0008 (D24, D26, D28) · README.md (solução) § Testes (unitários)`.
 
 ## 8. Inbox, outbox e eventos
 
@@ -130,7 +131,7 @@ fila após commit; transitória retenta via `ChangeMessageVisibility`
 (base 1s, teto 30s). Abertura positiva grava carteira + `OPENING` + ledger +
 2 eventos na mesma tx.
 
-Trilha: `ADR-0009 (D40a, D42–D44) · README §§ Filas, Testes`.
+Trilha: `ADR-0009 (D40a, D42–D44) · README.md (solução) §§ Filas, Testes`.
 
 ## 9. Auth e autorização
 
@@ -148,7 +149,7 @@ evento, `500` `FAILED` sem evento, `409` conflito, `202` pendente, `503` +
 domínio. Logs JSON com correlationIds (sem payload financeiro); Prometheus
 + OTel stdout; `/metrics` em porta admin; readiness estrito (PG+SQS).
 
-Trilha: `ADR-0010 (D31–D36, D41, D45–D51, D54, D55) · README §§ Exemplos, Operação`.
+Trilha: `ADR-0010 (D31–D36, D41, D45–D51, D54, D55) · README.md (solução) §§ Exemplos, Operação`.
 
 ## 10. Composição Fx e ciclo de vida
 
@@ -161,7 +162,7 @@ drain com deadline), fecha dependências após os consumidores.
 `tests/fx_composition_test.go` sobe/desce cada modo contra infra real, sem
 mocks, e prova a liberação religando as mesmas portas.
 
-Trilha: `ADR-0002 (D02, D05, D06) · README § Modos de operação`.
+Trilha: `ADR-0002 (D02, D05, D06) · README.md (solução) § Modos de operação`.
 
 ## 11. Limitações conhecidas e resultado do teste do emulador
 
@@ -187,7 +188,7 @@ produto); `playerId` não-UUID responde `503` em vez de `400` (achado do k6,
 ver `docs/k6-report.md` § Findings — correção exige toque de contrato,
 fora deste escopo).
 
-Trilha: `ADR-0001 (D37) · README §§ Filas, Solução de problemas`.
+Trilha: `ADR-0001 (D37) · README.md (solução) §§ Filas, Solução de problemas`.
 
 ## 12. Verificação executada (§13 + diferenciais)
 
@@ -215,7 +216,7 @@ Trilha: `ADR-0001 (D37) · README §§ Filas, Solução de problemas`.
 
 ## 13. Índice de rastreabilidade
 
-| ADR | Decisão | D-ids | Base (README do desafio) | README (solução) |
+| ADR | Decisão | D-ids | Base (REQUISITOS.md) | README.md (solução) |
 |-----|---------|-------|--------------------------|------------------|
 | 0000 | Usar ADRs | — | §15 | [Modos de operação](README.md#modos-de-operação) |
 | 0001 | MiniStack | D37 | §§4, 10, 15 | [Filas](README.md#filas), [Solução de problemas](README.md#solução-de-problemas) |

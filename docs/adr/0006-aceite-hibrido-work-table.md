@@ -1,7 +1,7 @@
 # ADR-0006: Aceite híbrido com work-table
 
 - Status: aceito
-- IDs: D17, D17b, D25, D27(revisto), D29c · Base: README §§6.3, 7 · Spec: `wagering`
+- IDs: D17, D17b, D25, D27(revisto), D29c · Base: REQUISITOS.md §§6.3, 7 · Spec: `wagering`
 
 ## Contexto
 
