@@ -137,13 +137,14 @@ Build tag: `integration` (arquivos em `tests/`, infra real — sem mocks).
 
 `make test-integration` para `consumer`/`workers` antes: os workers
 publicam o outbox compartilhado e disputariam os publishers dos testes.
-O alvo também purga as filas SQS locais e religa os serviços ao final,
-sempre com `-count=1` (sem cache). Sequência após carga:
+O alvo garante os `consumer`/`workers` no ar e drena o outbox do Postgres
+antes da suite, depois purga as filas SQS locais, roda com `-count=1` (sem
+cache) e religa os serviços ao final. Sequência após carga:
 
 ```bash
 make k6                          # deixa 3×api + backlog nas filas locais
 docker compose up -d             # volta a 1×api (publica portas)
-make test-integration            # purga filas, roda suite, religa workers
+make test-integration            # drena outbox, purga filas, roda suite, religa workers
 ```
 
 Detalhes em `docs/k6-report.md`.
@@ -155,7 +156,8 @@ Detalhes em `docs/k6-report.md`.
   (detalhes em `docs/k6-report.md` § Findings).
 - **k6 com 401**: tokens precisam de `iss` in-network (`keycloak:8080`);
   rode o k6 dentro da rede do compose (`make k6`).
-- **Suite lenta/falhando no outbox**: pare workers/consumers e limpe o
-  backlog de carga (ver `docs/k6-report.md` + `make test-integration`).
+- **Suite lenta/falhando no outbox**: o alvo drena o outbox do Postgres
+  automaticamente antes da suite (timeout de ~300s se os workers não
+  acompanham — escale `workers` ou espere). Ver `docs/k6-report.md`.
 - **Destrutivos**: `make clean` (mantém volumes), `make nuke` (destrói
   volumes e imagens locais, pede `NUKE`).

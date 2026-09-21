@@ -28,7 +28,16 @@ test: ## Run unit tests
 test-race: ## Run unit tests with the race detector
 	go test -race ./...
 
-test-integration: ## Run integration tests (needs up; stops consumer/workers: they race test-local publishers over the shared outbox)
+test-integration: ## Run integration tests (needs up; drains postgres outbox, then stops consumer/workers: they race test-local publishers over the shared outbox)
+	docker compose up -d consumer workers
+	@i=0; while true; do \
+		c=$$(docker compose exec -T postgres psql -U postgres -d wallet -tAc "SELECT count(*) FROM outbox WHERE published_at IS NULL" 2>/dev/null | tr -d '[:space:]'); \
+		[ "$$c" = "0" ] && break; \
+		i=$$((i+1)); \
+		if [ $$i -gt 60 ]; then echo "ERROR: postgres outbox not drained after 300s (pending=$$c); workers not keeping up - scale workers or wait" >&2; exit 1; fi; \
+		echo "postgres outbox pending: $$c (waiting 5s)"; \
+		sleep 5; \
+	done
 	docker compose stop consumer workers
 	@for q in wager-events.fifo wager-transactions.fifo wager-events-dlq.fifo wager-transactions-dlq.fifo; do curl -sf -X POST http://localhost:4566/ --data-urlencode "Action=PurgeQueue" --data-urlencode "Version=2012-11-05" --data-urlencode "QueueUrl=http://localhost:4566/000000000000/$$q" > /dev/null && echo "PurgeQueue $$q OK" || echo "PurgeQueue $$q skipped"; done; true
 	go test -tags integration -count=1 ./tests/ -timeout 5m; status=$$?; docker compose up -d consumer workers > /dev/null; exit $$status
