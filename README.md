@@ -77,7 +77,11 @@ make migrate-down   # reverte TUDO (pede confirmação; down-to 0)
 
 ## Exemplos autenticados
 
-Tokens via Keycloak `client_credentials` (realm `wallet` importado):
+Tokens via Keycloak `client_credentials` (realm `wallet` importado).
+Os tokens dos clientes interativos (`provider-a`, `provider-b`,
+`internal-service`) duram **1 hora**; o cliente `test-short-lived` emite
+tokens de **20s** e serve para validar a rejeição de credencial expirada.
+Se um passo devolver `401` no meio da bateria, renove o token.
 
 ```bash
 A=$(curl -s -X POST http://localhost:8081/realms/wallet/protocol/openid-connect/token \

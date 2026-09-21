@@ -14,7 +14,7 @@
       "publicClient": false,
       "serviceAccountsEnabled": true,
       "secret": "provider-a-secret",
-      "attributes": { "access.token.lifespan": "300" },
+      "attributes": { "access.token.lifespan": "3600" },
       "protocolMappers": [
         {
           "name": "provider-id",
@@ -39,7 +39,7 @@
       "publicClient": false,
       "serviceAccountsEnabled": true,
       "secret": "provider-b-secret",
-      "attributes": { "access.token.lifespan": "300" },
+      "attributes": { "access.token.lifespan": "3600" },
       "protocolMappers": [
         {
           "name": "provider-id",
@@ -63,7 +63,8 @@
       "protocol": "openid-connect",
       "publicClient": false,
       "serviceAccountsEnabled": true,
-      "secret": "internal-secret"
+      "secret": "internal-secret",
+      "attributes": { "access.token.lifespan": "3600" }
     },
     {
       "clientId": "test-short-lived",

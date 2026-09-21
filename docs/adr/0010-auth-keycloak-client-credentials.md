@@ -38,3 +38,15 @@ host: o Keycloak assina o `iss` a partir do host da requisição e o deployment
 sendo a garantia de vínculo — realm distinto (`/realms/other`) falha
 fechado. Sem isso, os exemplos autenticados do README.md (solução) seriam 401
 a partir do host (verificado em checkout limpo, task 7.2).
+
+## Revisão 2026-09-21 (token lifetime de dev)
+
+Os clientes interativos (`provider-a`, `provider-b`, `internal-service`)
+passaram de `access.token.lifespan: 300` para `3600` (1h) no realm importado,
+para que sessões manuais de exploração/avaliação não morram com `401` no meio
+da bateria. Isso **não** enfraquece a exigência de rejeição de credencial
+expirada (REQUISITOS.md §13): o mecanismo da prova é o cliente dedicado
+`test-short-lived` (20s), inalterado, usado por `tests/auth_oidc_test.go`. O
+realm importa o `realm.json` apenas em container novo (`--import-realm` não
+sobrescreve clientes já existentes); ao alterar lifetimes, recrie o container
+do Keycloak e reinicie a api para renovar o JWKS (chaves regeneradas).

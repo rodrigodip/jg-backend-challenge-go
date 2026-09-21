@@ -160,8 +160,9 @@ Trilha: `ADR-0009 (D40a, D42–D44) · README.md (solução) §§ Filas, Testes`
 ## 9. Auth e autorização
 
 Keycloak com realm importado, `client_credentials`
-(`provider-a`, `provider-b`, `internal-service`, `test-short-lived` de 20s
-para o teste de expiração). JWT validado localmente por JWKS (assinatura,
+(`provider-a`, `provider-b`, `internal-service` com tokens de **1h** para
+sessões manuais de avaliação; `test-short-lived` de **20s**, dedicado à
+prova de rejeição de credencial expirada). JWT validado localmente por JWKS (assinatura,
 `iss` estrito, `exp`/`nbf` com 30s de leeway); `providerId` vem de claim
 mapeada, nunca do corpo sem conferir. Roles: `provider` (só as próprias
 transações, inclusive replays — `403 PROVIDER_FORBIDDEN` sem dados fora do
